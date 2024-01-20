@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	api "v1/api/websoket"
+	"v1/analytics"
 	"v1/money_management"
 	"v1/utils"
 )
@@ -35,7 +35,14 @@ func randam_side() string {
 }
 func main() {
 
-	api.Api()
+	var wr = analytics.Winrate_arg{
+		Totall_wintrade: 100,
+		Totall_trade:    200,
+	}
+	var winrate float64 = wr.Calc_winrate(wr.Totall_wintrade, wr.Totall_trade)
+
+	// env := config.GetEnv()
+
 	w := 0.4044
 	r := 4.699
 	d := 0.33
@@ -53,4 +60,6 @@ func main() {
 	fmt.Println(risk_size, "%")
 
 	fmt.Println(sl, side, "EXITPRICE")
+	// fmt.Println(env.ApiKey)
+	fmt.Println(winrate)
 }
