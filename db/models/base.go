@@ -3,9 +3,9 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"gotrading/config"
 	"log"
 	"time"
+	"v1/config"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -22,7 +22,8 @@ func GetCandleTableName(productCode string, duration time.Duration) string {
 
 func init() {
 	var err error
-	DbConnection, err = sql.Open(config.Config.SQLDriver, config.Config.DbName)
+	config := config.GetEnv()
+	DbConnection, err = sql.Open(config.SQLDriver, config.DbName)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -35,8 +36,8 @@ func init() {
             size FLOAT)`, tableNameSignalEvents)
 	DbConnection.Exec(cmd)
 
-	for _, duration := range config.Config.Durations {
-		tableName := GetCandleTableName(config.Config.ProductCode, duration)
+	for _, duration := range config.Durations {
+		tableName := GetCandleTableName(config.ProductCode, duration)
 		c := fmt.Sprintf(`
             CREATE TABLE IF NOT EXISTS %s (
             time DATETIME PRIMARY KEY NOT NULL,

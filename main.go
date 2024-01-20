@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 	"v1/analytics"
+	"v1/config"
+	"v1/db/models"
 	"v1/money_management"
 	"v1/utils"
 )
@@ -35,13 +37,15 @@ func randam_side() string {
 }
 func main() {
 
+	db := models.DbConnection
+
+	env := config.GetEnv()
+
 	var wr = analytics.Winrate_arg{
 		Totall_wintrade: 100,
 		Totall_trade:    200,
 	}
-	var winrate float64 = wr.Calc_winrate(wr.Totall_wintrade, wr.Totall_trade)
-
-	// env := config.GetEnv()
+	var winrate float64 = analytics.Calc_winrate(wr.Totall_wintrade, wr.Totall_trade)
 
 	w := 0.4044
 	r := 4.699
@@ -58,8 +62,9 @@ func main() {
 
 	// Call the KellyCriterion function and print the result
 	fmt.Println(risk_size, "%")
-
+	fmt.Println(env.TradeDuration, "DURATION")
 	fmt.Println(sl, side, "EXITPRICE")
 	// fmt.Println(env.ApiKey)
 	fmt.Println(winrate)
+	fmt.Println(db)
 }

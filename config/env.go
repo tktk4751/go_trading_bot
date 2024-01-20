@@ -8,9 +8,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Env は環境変数を保持する構造体です
-
-type Env struct {
+type Envlist struct {
 	EthereumAddress           string
 	EthereumPrivateAddress    string
 	StarkPrivateKey           string
@@ -27,11 +25,9 @@ type Env struct {
 	ProductCode               string
 }
 
-// env はパッケージ内でのみアクセスできる Env 型の変数です
-var env Env
+var env Envlist
 
 func init() {
-	// .envファイルを読み込む
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -43,27 +39,26 @@ func init() {
 		"1h": time.Hour,
 	}
 
-	// env に環境変数の値をセットする
+	Env := Envlist{
+		EthereumAddress:           os.Getenv("ETH_WALLET_ADDRESS"),
+		EthereumPrivateAddress:    os.Getenv("ETH_PRUVATE_KEY"),
+		ApiKey:                    os.Getenv("API_KEY"),
+		ApiSeacret:                os.Getenv("API_SEACRET"),
+		ApiPassPhase:              os.Getenv("API_PASSPHASE"),
+		StarkPrivateKey:           os.Getenv("STARK_PRIVATE_KEY"),
+		StarkPublicKey:            os.Getenv("STARK_PUBLICKKEY"),
+		StarkPublicKeyYCoordinate: os.Getenv("STARK_PUBLICKKEY_YCOORDINATE"),
+		LogFile:                   os.Getenv("LOG_FILE"),
+		SQLDriver:                 os.Getenv("SQLDRIVER"),
+		DbName:                    os.Getenv("DBNAME"),
+		Durations:                 durations,
+		TradeDuration:             durations[os.Getenv("trade_duration")],
+		ProductCode:               os.Getenv("PRODUCT_CODE"),
+	}
 
-	env.EthereumAddress = os.Getenv("ETH_WALLET_ADDRESS")
-	env.EthereumPrivateAddress = os.Getenv("ETH_PRUVATE_KEY")
-	env.ApiKey = os.Getenv("API_KEY")
-	env.ApiSeacret = os.Getenv("API_SEACRET")
-	env.ApiPassPhase = os.Getenv("API_PASSPHASE")
-	env.StarkPrivateKey = os.Getenv("STARK_PRIVATE_KEY")
-	env.StarkPrivateKey = os.Getenv("STARK_PUBLICKKEY")
-	env.StarkPrivateKey = os.Getenv("STARK_PUBLICKKEY_YCOORDINATE")
-	env.LogFile = os.Getenv("LOG_FILE")
-	env.SQLDriver = os.Getenv("SQLDRIVER")
-	env.DbName = os.Getenv("DBNAME")
-	env.Durations = durations
-	env.TradeDuration = durations[os.Getenv("trade_duration")]
-
-	env.ProductCode = os.Getenv("PRODUCT_CODE")
-
+	env = Env
 }
 
-// GetEnv は env のコピーを返す関数です
-func GetEnv() Env {
+func GetEnv() Envlist {
 	return env
 }
