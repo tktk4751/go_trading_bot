@@ -5,10 +5,10 @@ ticker = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "AVAXUSDT", "MATICUSDT", "ATOMUSDT", 
 
 if __name__ == '__main__':
     data_dumper = BinanceDataDumper(
-        path_dir_where_to_dump="./datas",
+        path_dir_where_to_dump="/home/lux/dev/go_trading_bot/data",
         asset_class="spot",  # spot, um, cm
         data_type="klines",  # aggTrades, klines, trades
-        data_frequency="30m",
+        data_frequency="5m",
     )
 
     data_dumper.dump_data(
