@@ -11,7 +11,6 @@ import (
 	"strconv"
 )
 
-// ディレクトリ内のCSVファイルを結合して、ATR関数に渡せるデータに加工する関数
 func GetCandleData(dir string) [][]float64 {
 	// ディレクトリ内のファイルのパスを取得する
 	files, err := ioutil.ReadDir(dir)
@@ -32,7 +31,7 @@ func GetCandleData(dir string) [][]float64 {
 	// パスのリストをソートする
 	sort.Strings(paths)
 	// 結合したデータを格納するスライスを作成する
-	data := [][]float64{}
+	data := []Data{}
 	// 各CSVファイルを読み込む
 	for _, path := range paths {
 		// ファイルを開く
@@ -83,10 +82,18 @@ func GetCandleData(dir string) [][]float64 {
 			if err != nil {
 				log.Fatal(err)
 			}
-			// 高値、安値、終値の列を抽出する
-			row := []float64{csvData.High, csvData.Low, csvData.Close}
+			// 全ての列を抽出する
+			Alldata := Data{
+				Timestamp: csvData.Timestamp,
+				Open:      csvData.Open,
+				High:      csvData.High,
+				Low:       csvData.Low,
+				Close:     csvData.Close,
+				Volume:    csvData.Volume}
+
 			// 結合したデータに追加する
-			data = append(data, row)
+			data = append(data, Alldata)
+
 		}
 	}
 	// 結合したデータを返す

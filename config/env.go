@@ -22,7 +22,7 @@ type Envlist struct {
 	DbName                    string
 	TradeDuration             time.Duration
 	Durations                 map[string]time.Duration
-	ProductCode               string
+	ProductCode               []string
 }
 
 var env Envlist
@@ -33,11 +33,37 @@ func init() {
 		log.Fatal("Error loading .env file")
 	}
 
+	Productcode := []string{"BTCUSDT", "ETHUSDT", "SOLUSDT", "AVAXUSDT", "OPUSDT", "ARBUSDT", "PEPEUSDT", "SUIUSDT", "SEIUSDT"}
+
+	m := time.Minute
+	h := time.Hour
+
 	durations := map[string]time.Duration{
-		"1s": time.Second,
-		"1m": time.Minute,
-		"1h": time.Hour,
+		"1m":  m,
+		"5m":  m * 5,
+		"10m": m * 10,
+		"30m": m * 30,
+		"1h":  h,
+		"2h":  h * 2,
+		"4h":  h * 4,
+		"6h":  h * 6,
+		"8h":  h * 8,
+		"12h": h * 12,
+		"1d":  h * 24,
+		"3d":  h * 24 * 3,
+		"1w":  h * 24 * 7,
+		"2w":  h * 24 * 14,
 	}
+
+	// productcode := os.Getenv("PRODUCT_CODE")
+
+	// for i, v := range productcode {
+
+	// 	v := productcode[i]
+	// 	Tradelist =
+
+	// 	productcvode = append(v)
+	// }
 
 	Env := Envlist{
 		EthereumAddress:           os.Getenv("ETH_WALLET_ADDRESS"),
@@ -53,7 +79,7 @@ func init() {
 		DbName:                    os.Getenv("DBNAME"),
 		Durations:                 durations,
 		TradeDuration:             durations[os.Getenv("trade_duration")],
-		ProductCode:               os.Getenv("PRODUCT_CODE"),
+		ProductCode:               Productcode,
 	}
 
 	env = Env

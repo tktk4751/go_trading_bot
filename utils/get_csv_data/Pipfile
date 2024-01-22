@@ -13,4 +13,4 @@ python_version = "3.11"
 python_full_version = "3.11.2"
 
 [script]
-get = "pipenv run python3 /home/lux/dev/go_trading_bot/utils/get_csv_data/get_data.py"
+get = "python3 /home/lux/dev/go_trading_bot/utils/get_csv_data/get_data.py"
