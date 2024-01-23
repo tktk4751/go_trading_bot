@@ -1,4 +1,4 @@
-package define_data
+package analytics
 
 type Analytics struct {
 	AcountBalance      float64

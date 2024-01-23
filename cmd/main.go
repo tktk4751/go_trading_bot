@@ -3,13 +3,15 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"v1/pkg/analytics"
+
+	"v1/pkg/analytics/metrics"
 	"v1/pkg/config"
-	"v1/pkg/management"
+	"v1/pkg/db/models"
+	p "v1/pkg/management/position"
 	"v1/pkg/utils"
 )
 
-var path = "data/spot/monthly/klines/UNIUSDT/4h"
+var path = "pkg/data/spot/monthly/klines/OPUSDT/4h"
 
 var close []float64 = utils.GetClosePrice(path)
 
@@ -38,21 +40,21 @@ func randam_side() string {
 }
 func main() {
 
-	// db := models.DbConnection
+	db := models.DbConnection
 
 	env := config.GetEnv()
 
-	var wr = analytics.Winrate_arg{
+	var wr = metrics.Winrate_arg{
 		Totall_wintrade: 100,
 		Totall_trade:    200,
 	}
-	var winrate float64 = analytics.Calc_winrate(wr.Totall_wintrade, wr.Totall_trade)
+	var winrate float64 = metrics.Calc_winrate(wr.Totall_wintrade, wr.Totall_trade)
 
 	w := 0.4044
 	r := 4.699
 	d := 0.33
 
-	position := management.PositionSizeCalculator{}
+	position := p.PositionSizeCalculator{}
 
 	risk_size := position.Risk_size_calculator(w, r, d) * 100
 
@@ -67,7 +69,7 @@ func main() {
 	fmt.Println(sl, side, "EXITPRICE")
 	// fmt.Println(env.ApiKey)
 	fmt.Println(winrate)
-	// fmt.Println(db)
+	fmt.Println(db)
 	fmt.Println(hloc)
 
 }

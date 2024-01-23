@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/csv"
 	"io"
-	"io/ioutil"
+
 	"log"
 	"os"
 	"path/filepath"
@@ -14,7 +14,7 @@ import (
 // ディレクトリ内のCSVファイルを結合して、終値のみを抽出する関数
 func GetClosePrice(dir string) []float64 {
 	// ディレクトリ内のファイルのパスを取得する
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
 	}

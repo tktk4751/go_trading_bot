@@ -16,7 +16,7 @@ const (
 
 var DbConnection *sql.DB
 
-func GetCandleTableName(productCode string, duration time.Duration) string {
+func GetCandleTableName(productCode []string, duration time.Duration) string {
 	return fmt.Sprintf("%s_%s", productCode, duration)
 }
 

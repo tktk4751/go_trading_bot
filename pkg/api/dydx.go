@@ -20,15 +20,9 @@ import (
 const baseURL = "https://api.stage.dydx.exchange"
 
 type APIClient struct {
-	ethAddr     string
-	ethPriv     string
-	key         string
-	secret      string
-	passPhrase  string
-	starkKey    string
-	starkSecret string
-	starkYkey   string
-	httpClient  *http.Client
+	key        string
+	secret     string
+	httpClient *http.Client
 }
 
 func New(key, secret string) *APIClient {

@@ -2,4 +2,4 @@
 *.dll
 *.exe
 bin/
-data/
+data/spot/

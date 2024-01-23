@@ -93,11 +93,10 @@ func GetCandleData(dir string) []Data {
 			// 結合したデータに追加する
 			data = append(data, Alldata)
 
-			// 結合したデータを返す
-			return data
-
 		}
 
 	}
+	// 結合したデータを返す
+	return data
 
 }
