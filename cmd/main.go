@@ -1,6 +1,7 @@
 package main
 
 import (
+<<<<<<< HEAD
 
 	// "v1/pkg/analytics/metrics"
 
@@ -15,11 +16,25 @@ import (
 )
 
 var path = "/home/lux/dev/go_trading_bot/pkg/data/spot/monthly/klines"
+=======
+	"fmt"
+	"math/rand"
+
+	"v1/pkg/analytics/metrics"
+	"v1/pkg/config"
+	"v1/pkg/db/models"
+	p "v1/pkg/management/position"
+	"v1/pkg/utils"
+)
+
+var path = "pkg/data/spot/monthly/klines/OPUSDT/4h"
+>>>>>>> f2368b9e69670deb7cada702d1a07d48385c2c42
 
 var close []float64 = utils.GetClosePrice(path)
 
 var hloc = utils.GetCandleData(path)
 
+<<<<<<< HEAD
 // var side = randam_side()
 
 // func randam_side() string {
@@ -117,3 +132,61 @@ func main() {
 // fmt.Println(winrate)
 // fmt.Println(db)
 // fmt.Println(hloc)
+=======
+var side = randam_side()
+
+func randam_side() string {
+	// Declare a local variable result to store the random side
+	var result string
+
+	for i := 0; i < len(close); i++ {
+
+		n := rand.Intn(2)
+		// Assign "BUY" or "SELL" to result
+		if n == 0 {
+			result = "BUY"
+		} else {
+			// Otherwise, assign "SELL" to result
+			result = "SELL"
+		}
+
+	}
+	// Return the value of result
+	return result
+}
+func main() {
+
+	db := models.DbConnection
+
+	env := config.GetEnv()
+
+	var wr = metrics.Winrate_arg{
+		Totall_wintrade: 100,
+		Totall_trade:    200,
+	}
+	var winrate float64 = metrics.Calc_winrate(wr.Totall_wintrade, wr.Totall_trade)
+
+	w := 0.4044
+	r := 4.699
+	d := 0.33
+
+	position := p.PositionSizeCalculator{}
+
+	risk_size := position.Risk_size_calculator(w, r, d) * 100
+
+	sl := position.Stop_loss_price_calc(close, side)
+
+	// management := money_management.PositionSizeCalculator{}
+	// sl := management.Stop_loss_price_calc()
+
+	// Call the KellyCriterion function and print the result
+	fmt.Println(risk_size, "%")
+	fmt.Println(env.TradeDuration, "DURATION")
+	fmt.Println(sl, side, "EXITPRICE")
+	// fmt.Println(env.ApiKey)
+	fmt.Println(winrate)
+	fmt.Println(db)
+	fmt.Println(hloc)
+
+}
+>>>>>>> f2368b9e69670deb7cada702d1a07d48385c2c42

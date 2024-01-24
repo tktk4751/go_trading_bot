@@ -1,4 +1,5 @@
 package indicators
+<<<<<<< HEAD
 
 import (
 	"database/sql"
@@ -69,3 +70,5 @@ func donchain(value int, GetData() Kline) ([]float64, []float64, []float64) {
 
 	return high, low, basis
 }
+=======
+>>>>>>> f2368b9e69670deb7cada702d1a07d48385c2c42

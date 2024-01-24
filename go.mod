@@ -8,6 +8,7 @@ require (
 	golang.org/x/net v0.20.0
 )
 
+<<<<<<< HEAD
 require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/labstack/echo/v4 v4.11.4
@@ -28,3 +29,6 @@ require (
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )
+=======
+require github.com/gorilla/websocket v1.5.1
+>>>>>>> f2368b9e69670deb7cada702d1a07d48385c2c42
