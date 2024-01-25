@@ -56,7 +56,7 @@ type AssetDatas []AssetDurationData
 // CSVファイルがあるディレクトリのパスを全て取得する関数
 func GetRelativePaths() []string {
 	var root string = "./pkg/data/spot/monthly/klines"
-	var durations = []string{"1m", "30m", "4h", "15m"}
+	var durations = []string{"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h"}
 
 	var paths []string
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {

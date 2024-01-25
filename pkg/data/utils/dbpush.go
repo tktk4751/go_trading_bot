@@ -24,7 +24,7 @@ func ConnectDB(dbname string) (*sql.DB, error) {
 // DBファイルが存在しない場合は新規作成される
 
 // AssetDatas型のデータをDBに保存する関数
-func SaveAssetDatas(db *sql.DB, assetDatas AssetDatas) error {
+func SaveAssetDatasDB(db *sql.DB, assetDatas AssetDatas) error {
 
 	// トランザクションを開始
 	tx, err := db.Begin()
@@ -48,7 +48,7 @@ func SaveAssetDatas(db *sql.DB, assetDatas AssetDatas) error {
 		tableName := assetData.AssetName + "_" + assetData.Duration
 		// テーブルが存在しない場合は作成するSQL文を準備
 		createTableSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
-            Date TEXT PRIMARY KEY,
+            Date TEXT PRIMARY KEY NOT NULL,
             Open REAL,
             High REAL,
             Low REAL,

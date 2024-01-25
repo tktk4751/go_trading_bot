@@ -1,18 +1,17 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"net/http"
 
 	// "v1/pkg/analytics/metrics"
 
 	// "v1/pkg/config"
 	// "v1/pkg/db/models"
 	// p "v1/pkg/management/position"
-
-	// "fmt"
-	// "log"
-	// data "v1/pkg/db"
-	"fmt"
-	databace "v1/pkg/db"
+	data "v1/pkg/data/utils"
+	// chart "v1/pkg/charts"
 )
 
 // var path = "/home/lux/dev/go_trading_bot/pkg/data/spot/monthly/klines"
@@ -42,35 +41,47 @@ import (
 //		// Return the value of result
 //		return result
 //	}
+
+func logRequest(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+	})
+}
 func main() {
 
-	databace.GetCloseData("BTCUSDT", "4h")
+	// チャート呼び出し
+	// var c chart.CandleStickChart
+	// c.CandleStickChart()
 
-	// var assets_names []string = []string{"BTCUSDT", "MATICUSDT", "PEPEUSDT", "ARBUSDT", "ETHUSDT", "XRPUSDT", "OPUSDT", "ATOMUSDT", "UNIUSDT", "SEIUSDT", "SUIUSDT", "TIAUSDT", "DOTUSDT", "NEARUSDT", "WLDUSDT", "XRPUSDT"}
-	// var durations []string = []string{"1m", "15m", "30m", "4h"}
-	// paths := data.GetRelativePaths()
+	// query.GetCloseData("BTCUSDT", "4h")
 
-	// groupedPaths := data.GroupAssetNamePaths(paths)
+	var assets_names []string = []string{"RUNEUSDT", "BTCUSDT", "AAVEUSDT", "ORDIUSDT", "SANUSDT", "LTCUSDT", "OKBUSDT", "ASTRUSDT", "MNTUSDT", "FTMUSDT", "SNXUSDT", "DYDXUSDT", "BONKUSDT", "LUNAUSDT", "MAGICUSDT", "XLMUSDT", "DOGEUSDT", "TRSUSDT", "LINKUSDT", "TONUSDT", "ISPUSDT", "BONKUSDT", "GMXUSDT", "INJUSDT", "ETHUSDT", "SOLUSDT", "AVAXUSDT", "MATICUSDT", "ATOMUSDT", "UNIUSDT", "ARBUSDT", "OPUSDT", "PEPEUSDT", "SEIUSDT", "SUIUSDT", "TIAUSDT", "WLDUSDT", "XRPUSDT", "NEARUSDT", "DOTUSDT", "APTUSDT", "XMRUSDT", "LDOUSDT", "FILUSDT", "KASUSDT", "STXUSDT", "RNDRUSDT", "GRTUSDT"}
 
-	// asset_data, err := data.LoadOHLCV(groupedPaths, assets_names, durations)
-	// if err != nil {
-	// 	log.Fatalf("Error loading OHLCV data: %v", err)
-	// }
+	var durations []string = []string{"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h"}
+	paths := data.GetRelativePaths()
 
-	// // DBに接続する関数を呼び出し
-	// db, err := data.ConnectDB("./db/kline.db")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// // DBをクローズするのを遅延実行
-	// defer db.Close()
-	// // データをDBに保存する関数を呼び出し
-	// err = data.SaveAssetDatas(db, asset_data)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// indicators.GetData()
-	// 終了メッセージを表示
+	groupedPaths := data.GroupAssetNamePaths(paths)
+
+	asset_data, err := data.LoadOHLCV(groupedPaths, assets_names, durations)
+	if err != nil {
+		log.Fatalf("Error loading OHLCV data: %v", err)
+	}
+
+	// data.SaveAssetDatasCSV(asset_data)
+
+	// DBに接続する関数を呼び出し
+	db, err := data.ConnectDB("./db/kline.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// DBをクローズするのを遅延実行
+	defer db.Close()
+	// データをDBに保存する関数を呼び出し
+	err = data.SaveAssetDatasDB(db, asset_data)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// for key, paths := range groupedPaths {
 
@@ -84,6 +95,10 @@ func main() {
 
 	// fmt.Println(asset_data)
 	defer fmt.Println("メイン関数終了")
+
+	// fs := http.FileServer(http.Dir("pkg/charts/html"))
+	// log.Println("running server at http://localhost:8089")
+	// log.Fatal(http.ListenAndServe("localhost:8089", logRequest(fs)))
 
 }
 
