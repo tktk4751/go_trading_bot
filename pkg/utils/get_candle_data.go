@@ -11,12 +11,8 @@ import (
 	"v1/pkg/market"
 )
 
-<<<<<<< HEAD
 func GetCandleData(dir string) []market.Data {
 	var data []market.Data
-=======
-func GetCandleData(dir string) []Data {
->>>>>>> f2368b9e69670deb7cada702d1a07d48385c2c42
 	// ディレクトリ内のファイルのパスを取得する
 	files, err := os.ReadDir(dir)
 	if err != nil {

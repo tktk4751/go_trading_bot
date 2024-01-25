@@ -1,4 +1,4 @@
-package indicator
+package data
 
 import (
 	"database/sql"
@@ -93,6 +93,7 @@ func GetOHLCData(assetName string, duration string) []OHLC {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+
 	return ohlc
 }
 
@@ -153,5 +154,6 @@ func GetCloseData(assetName string, duration string) []CLOSE {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(close)
 	return close
 }

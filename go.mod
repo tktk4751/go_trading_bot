@@ -8,7 +8,6 @@ require (
 	golang.org/x/net v0.20.0
 )
 
-<<<<<<< HEAD
 require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/labstack/echo/v4 v4.11.4
@@ -17,6 +16,9 @@ require (
 )
 
 require (
+	github.com/go-echarts/go-echarts/v2 v2.3.3 // indirect
+	github.com/iamjinlei/go-tachart v0.0.0-20210729041122-12052a3368c8 // indirect
+	github.com/iamjinlei/go-tart v0.0.0-20210623083942-ceb57e98706b // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
@@ -29,6 +31,3 @@ require (
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )
-=======
-require github.com/gorilla/websocket v1.5.1
->>>>>>> f2368b9e69670deb7cada702d1a07d48385c2c42
