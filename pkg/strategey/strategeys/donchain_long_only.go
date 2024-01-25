@@ -3,12 +3,23 @@ package strategeys
 import (
 	"log"
 	"v1/pkg/data/query"
+	"v1/pkg/execute"
 	"v1/pkg/indicator/indicators"
 )
 
 func DonchainStrategeyLong(assetName string, duration string) (bool, bool) {
 
-	var buySignal bool = false
+	strategyName := "DonchainLongOnly"
+	asset_name := assetName
+	duration := duration
+	date date
+	price float64
+	size float64 
+	save bool
+
+	s:= execute.NewSignalEvents()
+
+	var buySignal bool = s.Buy()
 	var sellSignal bool = false
 
 	var shortExitSignal = false

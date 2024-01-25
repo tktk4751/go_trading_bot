@@ -1,7 +1,20 @@
 package data
 
+import "time"
+
+type Candle struct {
+	AssetName string
+	Duration  string
+	Date      time.Time
+	Open      float64
+	High      float64
+	Low       float64
+	Close     float64
+	Volume    float64
+}
+
 type Kline struct {
-	Date   string
+	Date   time.Time
 	Open   float64
 	High   float64
 	Low    float64
@@ -39,7 +52,7 @@ type Low struct {
 }
 
 type Date struct {
-	Date string
+	Date time.Time
 }
 
 type Volume struct {

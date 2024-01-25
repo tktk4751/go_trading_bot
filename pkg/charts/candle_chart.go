@@ -3,6 +3,7 @@ package chart
 import (
 	"io"
 	"os"
+	"time"
 	"v1/pkg/data"
 	"v1/pkg/data/query"
 	"v1/pkg/indicator/indicators"
@@ -31,7 +32,7 @@ func MapKlineData(datas []data.Kline) ([]klineData, error) {
 	var klineDataArray []klineData
 	for _, data := range rawData {
 		kd := klineData{
-			date: data.Date,
+			date: data.Date.Format(time.RFC3339),
 			data: [4]float64{data.Open, data.Close, data.Low, data.High},
 		}
 		klineDataArray = append(klineDataArray, kd)
@@ -239,7 +240,7 @@ func klineWithDonchain() *charts.Kline {
 		lowdata[i] = k.data[2]
 	}
 
-	donchain := indicators.Donchain(highdata, lowdata, 40)
+	donchain := indicators.Donchain(highdata, lowdata, 200)
 
 	// Convert ma20 to []opts.LineData
 	donchainLineHighData := make([]opts.LineData, len(donchain.High))

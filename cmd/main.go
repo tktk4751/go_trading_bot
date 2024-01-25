@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
+
+	// "net/http"
 	"v1/pkg/data/query"
 	"v1/pkg/execute"
 	// "v1/pkg/analytics/metrics"
@@ -11,7 +12,6 @@ import (
 	// "v1/pkg/db/models"
 	// p "v1/pkg/management/position"
 	// data "v1/pkg/data/utils"
-	// chart "v1/pkg/charts"
 )
 
 // var path = "/home/lux/dev/go_trading_bot/pkg/data/spot/monthly/klines"
@@ -42,37 +42,51 @@ import (
 //		return result
 //	}
 
-func logRequest(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
-		handler.ServeHTTP(w, r)
-	})
-}
+//	func logRequest(handler http.Handler) http.Handler {
+//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//			log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+//			handler.ServeHTTP(w, r)
+//		})
+//	}
 func main() {
 
 	strategyName := "test"
-	assetName := "SOLUSDT"
-	duration := "4H"
+	assetName := "ETHUSDT"
+	duration := "1h"
+	tableName := strategyName + "_" + assetName + "_" + duration
 
-	db, err := execute.DBOpen(strategyName, assetName, duration)
+	db, err := execute.DBOpen(tableName)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
 	s := execute.NewSignalEvents()
-	p, _ := query.GetKlineData(assetName, duration)
 
-	c1 := p[0].Close
-	c2 := p[2000].Close
-	err = s.Buy(db, strategyName, assetName, duration, p[8].Date, c1, 1.0)
-	if err != nil {
-		log.Println("Error buying:", err)
-	}
-	err = s.Sell(db, strategyName, assetName, duration, p[3].Date, c2, 1.0)
-	if err != nil {
-		log.Println("Error selling:", err)
-	}
+	p, _ := query.GetCandleData(assetName, duration)
+	// fmt.Println(p)
+
+	// for i := 0; i < len(p); i++ {
+
+	// 	c1 := p[50].Close
+	// 	c2 := p[300].Close
+
+	// 	by := s.Buy(db, strategyName, assetName, duration, p[3].Date, c1, 1.0, true)
+	// 	sl := s.Sell(db, strategyName, assetName, duration, p[500].Date, c2, 1.0, true)
+
+	// 	fmt.Println(by)
+	// 	fmt.Println(sl)
+	// }
+
+	c1 := p[3].Close
+	// 	c2 := p[300].Close
+	by := s.Buy(db, strategyName, assetName, duration, p[3].Date, c1, 1.0, true)
+	fmt.Println(by)
+	// fmt.Println(execute.GetSignalEventsByCount(db, strategyName, assetName, duration, 1))
+	// // fmt.Println(execute.GetSignalEventsAfterTime(strategyName, assetName, duration, c1.Time))
+	// fmt.Println(s.CollectAfter(time.Now().UTC()))
+	// // fmt.Println(s.CollectAfter(c1.Time))
+
+	db.Close()
 	defer fmt.Println("メイン関数終了")
 
 	// チャート呼び出し

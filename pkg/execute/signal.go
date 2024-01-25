@@ -2,9 +2,9 @@ package execute
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"database/sql"
@@ -12,7 +12,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var DbConnection *sql.DB
+// var DbConnection *sql.DB
 
 type SignalEvent struct {
 	Time         time.Time `json:"time"`
@@ -24,66 +24,108 @@ type SignalEvent struct {
 	Size         float64   `json:"size"`
 }
 
-func convertRFC3339ToTime(s string) (time.Time, error) {
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return t, nil
-}
+func DBOpen(tableName string) (*sql.DB, error) {
 
-func DBOpen(strategyName string, assetName string, duration string) (*sql.DB, error) {
-	dbname := "db/" + strategyName + "_" + assetName + "_" + duration + ".db"
-	DbConnection, err := sql.Open("sqlite3", dbname)
+	db, err := sql.Open("sqlite3", "./db/trade_record.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// データベースへの接続を確認
-	err = DbConnection.Ping()
+	err = db.Ping()
 	if err != nil {
 		return nil, err
 	}
 
-	return DbConnection, nil
+	createTableCmd := fmt.Sprintf(`
+	CREATE TABLE IF NOT EXISTS %s (
+		time TEXT NOT NULL,
+		strategy_name TEXT NOT NULL,
+		asset_name TEXT NOT NULL,
+		duration TEXT NOT NULL,
+		side TEXT NOT NULL,
+		price REAL NOT NULL,
+		size REAL NOT NULL)`, tableName)
+
+	_, err = db.Exec(createTableCmd)
+	if err != nil {
+		log.Printf("Error creating table: %v", err)
+		// return false
+	}
+
+	return db, nil
 }
 
-func (s *SignalEvent) Save(db *sql.DB, strategyName string, assetName string, duration string) error {
+// func (s *SignalEvent) Save(db *sql.DB, strategyName string, assetName string, duration string) bool {
+
+// 	if db == nil {
+// 		log.Println("database connection is nil")
+// 		return false
+// 	}
+// 	tableName := strategyName + "_" + assetName + "_" + duration
+
+// 	cmd := fmt.Sprintf("INSERT OR IGNORE INTO %s (time, asset_name, strategy_name, duration, side, price, size) VALUES (?, ?, ?, ?, ?, ?, ?)", tableName)
+// 	_, err := db.Exec(cmd, s.Time.Format(time.RFC3339), s.AssetName, strategyName, duration, s.Side, s.Price, s.Size)
+// 	if err != nil {
+// 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+// 			log.Println(err)
+// 			return true
+// 		}
+// 		return false
+// 	}
+
+// 	return true
+// }
+
+func (s *SignalEvent) Save(db *sql.DB, strategyName string, assetName string, duration string) bool {
+
+	if db == nil {
+		log.Println("database connection is nil")
+		return false
+	}
 	tableName := strategyName + "_" + assetName + "_" + duration
-	// トランザクションを開始
-	tx, err := db.Begin()
+
+	// var err error
+
+	// createTableCmd := fmt.Sprintf(`
+	// CREATE TABLE IF NOT EXISTS %s (
+	// 	time TEXT NOT NULL,
+	// 	strategy_name TEXT NOT NULL,
+	// 	asset_name TEXT NOT NULL,
+	// 	duration TEXT NOT NULL,
+	// 	side TEXT NOT NULL,
+	// 	price REAL NOT NULL,
+	// 	size REAL NOT NULL,
+	// 	PRIMARY KEY(time, asset_name, strategy_name, duration)
+	// 	)`, tableName)
+
+	// _, err = db.Exec(createTableCmd)
+	// if err != nil {
+	// 	log.Printf("Error creating table: %v", err)
+	// 	// return false
+	// }
+
+	cmd := fmt.Sprintf("INSERT INTO %s (time, asset_name, strategy_name, duration, side, price, size) VALUES (?, ?, ?, ?, ?, ?, ?)", tableName)
+	log.Printf("Executing query: %s\n", cmd) // ログ出力を追加
+
+	result, err := db.Exec(cmd, s.Time.Format(time.RFC3339), s.AssetName, strategyName, duration, s.Side, s.Price, s.Size)
 	if err != nil {
-		return err
+		log.Printf("Error executing query: %v\n", err) // エラーメッセージを詳細にする
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			log.Println(err)
+			return true
+		}
+		return false
 	}
-	// トランザクションの終了を遅延実行
-	defer tx.Commit()
 
-	cmd := fmt.Sprintf(`
-        CREATE TABLE IF NOT EXISTS %s (
-            time DATETIME PRIMARY KEY NOT NULL,
-            product_code STRING,
-            side STRING,
-            price FLOAT,
-            size FLOAT)`, tableName)
-
-	_, err = tx.Exec(cmd)
+	rowsAffected, err := result.RowsAffected() // 影響を受けた行数を取得
 	if err != nil {
-		return err
+		log.Printf("Error getting rows affected: %v\n", err) // エラーメッセージを詳細にする
+	} else {
+		log.Printf("Rows affected: %d\n", rowsAffected) // 影響を受けた行数をログに出力
 	}
 
-	cmd2 := fmt.Sprintf(`
-		INSERT INTO %s (time, product_code, side, price, size) 
-		VALUES (?, ?, ?, ?, ?) 
-		ON CONFLICT(time) DO UPDATE SET
-		product_code=excluded.product_code,
-		side=excluded.side,
-		price=excluded.price,
-		size=excluded.size`, tableName)
-	_, error := tx.Exec(cmd2, s.Time.Format(time.RFC3339), s.AssetName, s.Side, s.Price, s.Size)
-	if error != nil {
-		return error
-	}
-	return err
+	return true
 }
 
 type SignalEvents struct {
@@ -94,12 +136,12 @@ func NewSignalEvents() *SignalEvents {
 	return &SignalEvents{}
 }
 
-func GetSignalEventsByCount(strategyName string, assetName string, duration string, loadEvents int) *SignalEvents {
+func GetSignalEventsByCount(db *sql.DB, strategyName string, assetName string, duration string, loadEvents int) *SignalEvents {
 	dbname := "/db/" + strategyName + "_" + assetName + "_" + duration + ".db"
 	cmd := fmt.Sprintf(`SELECT * FROM (
-        SELECT time, product_code, side, price, size FROM %s WHERE product_code = ? ORDER BY time DESC LIMIT ? )
+        SELECT time, asset_name,strategy_name, duration,side, price, size FROM %s WHERE asset_name = ? ORDER BY time DESC LIMIT ? )
         ORDER BY time ASC;`, dbname)
-	rows, err := DbConnection.Query(cmd, assetName, loadEvents)
+	rows, err := db.Query(cmd, assetName, loadEvents)
 	if err != nil {
 		return nil
 	}
@@ -118,14 +160,14 @@ func GetSignalEventsByCount(strategyName string, assetName string, duration stri
 	return &signalEvents
 }
 
-func GetSignalEventsAfterTime(strategyName string, assetName string, duration string, timeTime time.Time) *SignalEvents {
+func GetSignalEventsAfterTime(db *sql.DB, strategyName string, assetName string, duration string, timeTime time.Time) *SignalEvents {
 	dbname := "/db/" + strategyName + "_" + assetName + "_" + duration + ".db"
 	cmd := fmt.Sprintf(`SELECT * FROM (
-                SELECT time, product_code, side, price, size FROM %s
+                SELECT time, asset_name, side, price, size FROM %s
                 WHERE DATETIME(time) >= DATETIME(?)
                 ORDER BY time DESC
             ) ORDER BY time ASC;`, dbname)
-	rows, err := DbConnection.Query(cmd, timeTime.Format(time.RFC3339))
+	rows, err := db.Query(cmd, timeTime.Format(time.RFC3339))
 	if err != nil {
 		return nil
 	}
@@ -165,50 +207,97 @@ func (s *SignalEvents) CanSell(t time.Time) bool {
 	return false
 }
 
-func (s *SignalEvents) Buy(db *sql.DB, strategyName string, assetName string, duration string, date string, price, size float64) error {
-	t, err := convertRFC3339ToTime(date)
-	if err != nil {
-		return err
+// func (s *SignalEvents) Buy(db *sql.DB, strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
+
+// 	tableName := strategyName + "_" + assetName + "_" + duration
+
+// 	// トランザクションを開始
+// 	tx, err := db.Begin()
+// 	if err != nil {
+// 		return false
+// 	}
+// 	// トランザクションの終了を遅延実行
+// 	defer tx.Commit()
+
+// 	if !s.CanBuy(date) {
+// 		fmt.Println("買えません")
+// 		return false
+// 	}
+// 	signalEvent := SignalEvent{
+// 		Time:         date,
+// 		StrategyName: strategyName,
+// 		AssetName:    assetName,
+// 		Duration:     duration,
+// 		Side:         "BUY",
+// 		Price:        price,
+// 		Size:         size,
+// 	}
+
+// 	s.Signals = append(s.Signals, signalEvent)
+// 	fmt.Println("買ったぜ")
+
+// 	insertSQL := fmt.Sprintf(`INSERT OR IGNORE INTO %s (
+// 		time, asset_name, strategy_name, duration, side, price, size
+// 	) VALUES (?, ?, ?, ?, ?, ?, ?)`, tableName)
+
+// 	_, error := tx.Exec(insertSQL, signalEvent.Time.Format(time.RFC3339), signalEvent.AssetName, strategyName, duration, signalEvent.Side, signalEvent.Price, signalEvent.Size)
+
+// 	if error != nil {
+// 		return false
+// 	}
+
+// 	return true
+
+// }
+
+func (s *SignalEvents) Buy(db *sql.DB, strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
+
+	if !s.CanBuy(date) {
+		fmt.Println("買えません")
+		return false
 	}
-	if !s.CanBuy(t) {
-		return errors.New("cannot buy at this time")
-	}
+
 	signalEvent := SignalEvent{
-		AssetName: assetName,
-		Time:      t,
-		Side:      "BUY",
-		Price:     price,
-		Size:      size,
+		Time:         date,
+		StrategyName: strategyName,
+		AssetName:    assetName,
+
+		Duration: duration,
+		Side:     "BUY",
+		Price:    price,
+		Size:     size,
 	}
-	err = signalEvent.Save(db, strategyName, assetName, duration)
-	if err != nil {
-		return err
+	if save {
+		signalEvent.Save(db, strategyName, assetName, duration)
+		fmt.Println("DBに保存完了")
 	}
 	s.Signals = append(s.Signals, signalEvent)
-	return nil
+	return true
 }
 
-func (s *SignalEvents) Sell(db *sql.DB, strategyName string, assetName string, duration string, date string, price, size float64) error {
-	t, err := convertRFC3339ToTime(date)
-	if err != nil {
-		return err
+func (s *SignalEvents) Sell(db *sql.DB, strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
+
+	if !s.CanSell(date) {
+		fmt.Println("売れません")
+		return false
 	}
-	// if !s.CanSell(t) {
-	// 	return errors.New("cannot sell at this time")
-	// }
 	signalEvent := SignalEvent{
-		AssetName: assetName,
-		Time:      t,
-		Side:      "SELL",
-		Price:     price,
-		Size:      size,
+		Time:         date,
+		StrategyName: strategyName,
+		AssetName:    assetName,
+		Duration:     duration,
+		Side:         "SELL",
+		Price:        price,
+		Size:         size,
 	}
-	err = signalEvent.Save(db, strategyName, assetName, duration)
-	if err != nil {
-		return err
+
+	if save {
+		signalEvent.Save(db, strategyName, assetName, duration)
+		fmt.Println("DBに保存完了")
 	}
+
 	s.Signals = append(s.Signals, signalEvent)
-	return nil
+	return true
 }
 
 func (s *SignalEvents) Profit() float64 {
@@ -229,7 +318,7 @@ func (s *SignalEvents) Profit() float64 {
 			beforeSell = total
 		}
 	}
-	if isHolding == true {
+	if isHolding {
 		return beforeSell
 	}
 	return total

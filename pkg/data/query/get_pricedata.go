@@ -6,10 +6,57 @@ import (
 	"log"
 	"v1/pkg/data"
 
+	"time"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
+func convertRFC3339ToTime(s string) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return t, nil
+}
+
 // 課題 メソッドにしよう
+
+func GetCandleData(assetName string, duration string) ([]data.Candle, error) {
+
+	db, err := sql.Open("sqlite3", "db/kline.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	query := fmt.Sprintf("SELECT * FROM %s_%s", assetName, duration)
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var candle []data.Candle
+	for rows.Next() {
+		var k data.Candle
+		var dateStr string
+		err := rows.Scan(&dateStr, &k.Open, &k.High, &k.Low, &k.Close, &k.Volume)
+		if err != nil {
+			log.Fatal(err)
+		}
+		k.Date, err = convertRFC3339ToTime(dateStr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		k.AssetName = assetName
+		k.Duration = duration
+		candle = append(candle, k)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return candle, nil
+}
 
 func GetHLCData(assetName string, duration string) ([]data.HLC, error) {
 	db, err := sql.Open("sqlite3", "db/kline.db")
@@ -81,9 +128,6 @@ func GetKlineData(assetName string, duration string) ([]data.Kline, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err != nil {
-		return nil, err
-	}
 	defer db.Close()
 
 	query := fmt.Sprintf("SELECT * FROM %s_%s", assetName, duration)
@@ -96,12 +140,16 @@ func GetKlineData(assetName string, duration string) ([]data.Kline, error) {
 	var kline []data.Kline
 	for rows.Next() {
 		var k data.Kline
-		err := rows.Scan(&k.Date, &k.Open, &k.High, &k.Low, &k.Close, &k.Volume)
+		var dateStr string
+		err := rows.Scan(&dateStr, &k.Open, &k.High, &k.Low, &k.Close, &k.Volume)
+		if err != nil {
+			log.Fatal(err)
+		}
+		k.Date, err = convertRFC3339ToTime(dateStr)
 		if err != nil {
 			log.Fatal(err)
 		}
 		kline = append(kline, k)
-		// fmt.Println(hlc)
 	}
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
