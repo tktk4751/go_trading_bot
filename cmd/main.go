@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
+	"v1/pkg/data/query"
+	"v1/pkg/execute"
 	// "v1/pkg/analytics/metrics"
-
 	// "v1/pkg/config"
 	// "v1/pkg/db/models"
 	// p "v1/pkg/management/position"
-	chart "v1/pkg/charts"
 	// data "v1/pkg/data/utils"
 	// chart "v1/pkg/charts"
 )
@@ -51,9 +50,34 @@ func logRequest(handler http.Handler) http.Handler {
 }
 func main() {
 
+	strategyName := "test"
+	assetName := "SOLUSDT"
+	duration := "4H"
+
+	db, err := execute.DBOpen(strategyName, assetName, duration)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	s := execute.NewSignalEvents()
+	p, _ := query.GetKlineData(assetName, duration)
+
+	c1 := p[0].Close
+	c2 := p[2000].Close
+	err = s.Buy(db, strategyName, assetName, duration, p[8].Date, c1, 1.0)
+	if err != nil {
+		log.Println("Error buying:", err)
+	}
+	err = s.Sell(db, strategyName, assetName, duration, p[3].Date, c2, 1.0)
+	if err != nil {
+		log.Println("Error selling:", err)
+	}
+	defer fmt.Println("メイン関数終了")
+
 	// チャート呼び出し
-	var c chart.CandleStickChart
-	c.CandleStickChart()
+	// var c chart.CandleStickChart
+	// c.CandleStickChart()
 
 	// query.GetCloseData("BTCUSDT", "4h")
 
@@ -95,11 +119,10 @@ func main() {
 	// }
 
 	// fmt.Println(asset_data)
-	defer fmt.Println("メイン関数終了")
 
-	fs := http.FileServer(http.Dir("pkg/charts/html"))
-	log.Println("running server at http://localhost:8089")
-	log.Fatal(http.ListenAndServe("localhost:8089", logRequest(fs)))
+	// fs := http.FileServer(http.Dir("pkg/charts/html"))
+	// log.Println("running server at http://localhost:8089")
+	// log.Fatal(http.ListenAndServe("localhost:8089", logRequest(fs)))
 
 }
 

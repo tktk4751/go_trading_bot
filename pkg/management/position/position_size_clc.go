@@ -14,21 +14,22 @@ var data = utils.CombineCSV(op)
 var close = utils.GetClosePrice(op)
 
 type PositionSizeCalculator struct {
-	position_size     float64
-	account_size      float64
-	risk_size         float64
-	leverage          int
-	win_rate          float64
-	side              string
-	max_drawdown      float64
-	risk_reward_ratio float64
-	stop_loss_price   float64
+	PositionSize    float64
+	AccountSize     float64
+	RiskSize        float64
+	Leverage        int
+	WinRate         float64
+	Side            string
+	MaxDrawdown     float64
+	RiskRewardRatio float64
+	PtopLossPrice   float64
 }
 
 type SL struct {
-	data  [][]float64
-	close []float64
-	side  string
+	Data   [][]float64
+	Close  []float64
+	Amount []float64
+	Side   string
 }
 
 var atr = indicators.Atr(data, 21)

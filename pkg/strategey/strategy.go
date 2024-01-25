@@ -6,7 +6,7 @@ type Signal struct {
 	SignalsID        string
 	AssetName        string
 	Time             time.Time
-	Timefream        string
+	Duration         string
 	Date             string
 	Side             string
 	Price            float64
