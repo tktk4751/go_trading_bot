@@ -5,6 +5,7 @@ import (
 	"os"
 	"v1/pkg/data"
 	"v1/pkg/data/query"
+	"v1/pkg/indicator/indicators"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/components"
@@ -17,8 +18,8 @@ type klineData struct {
 	data [4]float64
 }
 
-var assetName string = "MATICUSDT"
-var duration string = "30m"
+var assetName string = "SOLUSDT"
+var duration string = "4h"
 
 var datas, err = query.GetKlineData(assetName, duration)
 
@@ -176,7 +177,7 @@ func klineWithMA() *charts.Kline {
 	// Calculate MA20 using talib
 	closePrices := make([]float64, len(kd))
 	for i, k := range kd {
-		closePrices[i] = k.data[3] // Assuming the close price is at index 3
+		closePrices[i] = k.data[1] // Assuming the close price is at index 3
 	}
 	ma20 := talib.Sma(closePrices, 200)
 
@@ -220,6 +221,90 @@ func klineWithMA() *charts.Kline {
 	return kline
 }
 
+func klineWithDonchain() *charts.Kline {
+	kline := charts.NewKLine()
+
+	x := make([]string, 0)
+	y := make([]opts.KlineData, 0)
+	for i := 0; i < len(kd); i++ {
+		x = append(x, kd[i].date)
+		y = append(y, opts.KlineData{Value: kd[i].data})
+	}
+
+	// Calculate MA20 using talib
+	highdata := make([]float64, len(kd))
+	lowdata := make([]float64, len(kd))
+	for i, k := range kd {
+		highdata[i] = k.data[3]
+		lowdata[i] = k.data[2]
+	}
+
+	donchain := indicators.Donchain(highdata, lowdata, 40)
+
+	// Convert ma20 to []opts.LineData
+	donchainLineHighData := make([]opts.LineData, len(donchain.High))
+	for i, v := range donchain.High {
+		donchainLineHighData[i] = opts.LineData{Value: v}
+	}
+
+	// Add MA20 to the chart
+	donchainLineHigh := charts.NewLine()
+	donchainLineHigh.SetXAxis(x).AddSeries("High", donchainLineHighData)
+
+	kline.Overlap(donchainLineHigh)
+
+	// Convert ma20 to []opts.LineData
+	donchainLineLowData := make([]opts.LineData, len(donchain.Low))
+	for i, v := range donchain.Low {
+		donchainLineLowData[i] = opts.LineData{Value: v}
+	}
+
+	// Add MA20 to the chart
+	donchainLineLow := charts.NewLine()
+	donchainLineLow.SetXAxis(x).AddSeries("Low", donchainLineLowData)
+
+	kline.Overlap(donchainLineLow)
+
+	// Convert ma20 to []opts.LineData
+	donchainLineMidData := make([]opts.LineData, len(donchain.Mid))
+	for i, v := range donchain.Mid {
+		donchainLineMidData[i] = opts.LineData{Value: v}
+	}
+
+	// Add MA20 to the chart
+	donchainLineMid := charts.NewLine()
+	donchainLineMid.SetXAxis(x).AddSeries("Mid", donchainLineMidData)
+
+	kline.Overlap(donchainLineMid)
+
+	kline.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title: assetName + " " + duration + " " + "Chart",
+		}),
+		charts.WithXAxisOpts(opts.XAxis{
+			SplitNumber: 20,
+		}),
+		charts.WithYAxisOpts(opts.YAxis{
+			Scale: true,
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:       "inside",
+			Start:      50,
+			End:        100,
+			XAxisIndex: []int{0},
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:       "slider",
+			Start:      50,
+			End:        100,
+			XAxisIndex: []int{0},
+		}),
+	)
+
+	kline.SetXAxis(x).AddSeries("kline", y)
+	return kline
+}
+
 type CandleStickChart struct{}
 
 func (CandleStickChart) CandleStickChart() {
@@ -228,6 +313,7 @@ func (CandleStickChart) CandleStickChart() {
 		// klineDataZoomInside(),
 		klineDataZoomBoth(),
 		klineWithMA(),
+		klineWithDonchain(),
 	)
 
 	f, err := os.Create("pkg/charts/html/candle_stick_chart.html")

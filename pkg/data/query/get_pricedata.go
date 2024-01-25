@@ -9,9 +9,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// 課題 GetDataを引数でAssetnameとDurationを受け取って､他のインディケーターでも使えるようにする
+// 課題 メソッドにしよう
 
-func GetHLCData(assetName string, duration string) []data.HLC {
+func GetHLCData(assetName string, duration string) ([]data.HLC, error) {
 	db, err := sql.Open("sqlite3", "db/kline.db")
 	if err != nil {
 		log.Fatal(err)
@@ -38,7 +38,7 @@ func GetHLCData(assetName string, duration string) []data.HLC {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	return hlc
+	return hlc, nil
 }
 
 func GetOHLCData(assetName string, duration string) ([]data.OHLC, error) {
@@ -109,7 +109,41 @@ func GetKlineData(assetName string, duration string) ([]data.Kline, error) {
 	return kline, nil
 }
 
-func GetCloseData(assetName string, duration string) ([]data.CLOSE, error) {
+func GetDateData(assetName string, duration string) ([]data.Date, error) {
+
+	db, err := sql.Open("sqlite3", "db/kline.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	query := fmt.Sprintf("SELECT Date FROM %s_%s", assetName, duration)
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var date []data.Date
+	for rows.Next() {
+		var k data.Date
+		err := rows.Scan(&k.Date)
+		if err != nil {
+			log.Fatal(err)
+		}
+		date = append(date, k)
+		// fmt.Println(hlc)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return date, nil
+}
+
+func GetCloseData(assetName string, duration string) ([]data.Close, error) {
 	db, err := sql.Open("sqlite3", "db/kline.db")
 	if err != nil {
 		log.Fatal(err)
@@ -126,9 +160,9 @@ func GetCloseData(assetName string, duration string) ([]data.CLOSE, error) {
 	}
 	defer rows.Close()
 
-	var close []data.CLOSE
+	var close []data.Close
 	for rows.Next() {
-		var k data.CLOSE
+		var k data.Close
 		err := rows.Scan(&k.Close)
 		if err != nil {
 			log.Fatal(err)
@@ -141,4 +175,140 @@ func GetCloseData(assetName string, duration string) ([]data.CLOSE, error) {
 	}
 	fmt.Println(close)
 	return close, nil
+}
+
+func GetOpenData(assetName string, duration string) ([]data.Open, error) {
+	db, err := sql.Open("sqlite3", "db/kline.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	query := fmt.Sprintf("SELECT Open FROM %s_%s", assetName, duration)
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var open []data.Open
+	for rows.Next() {
+		var k data.Open
+		err := rows.Scan(&k.Open)
+		if err != nil {
+			log.Fatal(err)
+		}
+		open = append(open, k)
+		// fmt.Println(hlc)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(open)
+	return open, nil
+}
+
+func GetHighData(assetName string, duration string) ([]data.High, error) {
+
+	db, err := sql.Open("sqlite3", "db/kline.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	query := fmt.Sprintf("SELECT High FROM %s_%s", assetName, duration)
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var high []data.High
+	for rows.Next() {
+		var k data.High
+		err := rows.Scan(&k.High)
+		if err != nil {
+			log.Fatal(err)
+		}
+		high = append(high, k)
+		// fmt.Println(hlc)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return high, nil
+}
+
+func GetLowData(assetName string, duration string) ([]data.Low, error) {
+
+	db, err := sql.Open("sqlite3", "db/kline.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	query := fmt.Sprintf("SELECT Low FROM %s_%s", assetName, duration)
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var low []data.Low
+	for rows.Next() {
+		var k data.Low
+		err := rows.Scan(&k.Low)
+		if err != nil {
+			log.Fatal(err)
+		}
+		low = append(low, k)
+		// fmt.Println(hlc)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return low, nil
+}
+
+func GetVolumeData(assetName string, duration string) ([]data.Volume, error) {
+
+	db, err := sql.Open("sqlite3", "db/kline.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	query := fmt.Sprintf("SELECT Volume FROM %s_%s", assetName, duration)
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var volume []data.Volume
+	for rows.Next() {
+		var k data.Volume
+		err := rows.Scan(&k.Volume)
+		if err != nil {
+			log.Fatal(err)
+		}
+		volume = append(volume, k)
+		// fmt.Println(hlc)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return volume, nil
 }

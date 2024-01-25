@@ -22,8 +22,28 @@ type OHLC struct {
 	Close float64
 }
 
-type CLOSE struct {
+type Close struct {
 	Close float64
+}
+
+type Open struct {
+	Open float64
+}
+
+type High struct {
+	High float64
+}
+
+type Low struct {
+	Low float64
+}
+
+type Date struct {
+	Date string
+}
+
+type Volume struct {
+	Volume float64
 }
 
 // import (
