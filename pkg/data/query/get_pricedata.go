@@ -1,4 +1,4 @@
-package query
+package dbquery
 
 import (
 	"database/sql"
@@ -11,7 +11,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func convertRFC3339ToTime(s string) (time.Time, error) {
+func ConvertRFC3339ToTime(s string) (time.Time, error) {
 	t, err := time.Parse(time.RFC3339, s)
 	if err != nil {
 		return time.Time{}, err
@@ -44,7 +44,7 @@ func GetCandleData(assetName string, duration string) ([]data.Candle, error) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		k.Date, err = convertRFC3339ToTime(dateStr)
+		k.Date, err = ConvertRFC3339ToTime(dateStr)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -145,7 +145,7 @@ func GetKlineData(assetName string, duration string) ([]data.Kline, error) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		k.Date, err = convertRFC3339ToTime(dateStr)
+		k.Date, err = ConvertRFC3339ToTime(dateStr)
 		if err != nil {
 			log.Fatal(err)
 		}

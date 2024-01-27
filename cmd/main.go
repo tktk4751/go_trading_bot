@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	// "net/http"
-	"v1/pkg/data/query"
+	"v1/pkg/analytics"
+	chart "v1/pkg/charts"
 	"v1/pkg/execute"
+	"v1/pkg/strategey"
 	// "v1/pkg/analytics/metrics"
-	// "v1/pkg/config"
 	// "v1/pkg/db/models"
 	// p "v1/pkg/management/position"
 	// data "v1/pkg/data/utils"
@@ -42,56 +44,59 @@ import (
 //		return result
 //	}
 
-//	func logRequest(handler http.Handler) http.Handler {
-//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//			log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
-//			handler.ServeHTTP(w, r)
-//		})
-//	}
+func logRequest(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+	})
+}
 func main() {
-
-	strategyName := "test"
-	assetName := "ETHUSDT"
-	duration := "1h"
+	strategyName := "DBO"
+	assetName := "LINKUSDT"
+	duration := "30m"
 	tableName := strategyName + "_" + assetName + "_" + duration
 
-	db, err := execute.DBOpen(tableName)
+	_, err := execute.CreateDBTable(tableName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	s := execute.NewSignalEvents()
+	df, _ := strategey.GetCandleData(assetName, duration)
 
-	p, _ := query.GetCandleData(assetName, duration)
-	// fmt.Println(p)
+	profit, period := df.OptimizeDonchain()
 
-	// for i := 0; i < len(p); i++ {
+	if profit > 0 {
 
-	// 	c1 := p[50].Close
-	// 	c2 := p[300].Close
+		df.Signal = df.DonchainStrategy(period)
 
-	// 	by := s.Buy(db, strategyName, assetName, duration, p[3].Date, c1, 1.0, true)
-	// 	sl := s.Sell(db, strategyName, assetName, duration, p[500].Date, c2, 1.0, true)
+	}
 
-	// 	fmt.Println(by)
-	// 	fmt.Println(sl)
-	// }
+	l, lr := analytics.FinalBalance(df.Signal)
 
-	c1 := p[3].Close
-	// 	c2 := p[300].Close
-	by := s.Buy(db, strategyName, assetName, duration, p[3].Date, c1, 1.0, true)
-	fmt.Println(by)
-	// fmt.Println(execute.GetSignalEventsByCount(db, strategyName, assetName, duration, 1))
-	// // fmt.Println(execute.GetSignalEventsAfterTime(strategyName, assetName, duration, c1.Time))
-	// fmt.Println(s.CollectAfter(time.Now().UTC()))
-	// // fmt.Println(s.CollectAfter(c1.Time))
+	fmt.Println(df.Signal)
+	fmt.Println("初期残高", analytics.AccountBalance)
+	fmt.Println("最終残高", l, "比率", lr)
+	fmt.Println("勝率", analytics.WinRate(df.Signal))
+	fmt.Println("総利益", analytics.TotalProfit(df.Signal))
+	fmt.Println("総損失", analytics.TotalLoss(df.Signal))
+	fmt.Println("プロフィットファクター", analytics.ProfitFactor(df.Signal))
+	fmt.Println("最大ドローダウン", analytics.MaxDrawdown(df.Signal))
+	fmt.Println("純利益", analytics.NetProfit(df.Signal))
 
-	db.Close()
+	// s := execute.NewSignalEvents()
+
+	// p, _ := query.GetCandleData(assetName, duration)
+
+	// c1 := p[3].Close
+	// // 	c2 := p[300].Close
+	// by := s.Buy(strategyName, assetName, duration, p[40].Date, c1, 1.0, true)
+	// fmt.Println(by)
+
 	defer fmt.Println("メイン関数終了")
 
 	// チャート呼び出し
-	// var c chart.CandleStickChart
-	// c.CandleStickChart()
+	var c chart.CandleStickChart
+	c.CandleStickChart()
 
 	// query.GetCloseData("BTCUSDT", "4h")
 

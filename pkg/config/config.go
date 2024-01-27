@@ -19,10 +19,11 @@ type Envlist struct {
 	ApiPassPhase              string
 	LogFile                   string
 	SQLDriver                 string
-	DbName                    string
+	DbName1                   string
+	DbName2                   string
 	TradeDuration             time.Duration
 	Durations                 map[string]time.Duration
-	ProductCode               []string
+	AssetName                 []string
 	PORT                      string
 }
 
@@ -34,7 +35,7 @@ func init() {
 		log.Fatal("Error loading .env file")
 	}
 
-	Productcode := []string{"BTCUSDT", "ETHUSDT", "SOLUSDT", "AVAXUSDT", "OPUSDT", "ARBUSDT", "PEPEUSDT", "SUIUSDT", "SEIUSDT"}
+	assetName := []string{"BTCUSDT", "ETHUSDT", "SOLUSDT", "AVAXUSDT", "OPUSDT", "ARBUSDT", "PEPEUSDT", "SUIUSDT", "SEIUSDT"}
 
 	m := time.Minute
 	h := time.Hour
@@ -77,10 +78,11 @@ func init() {
 		StarkPublicKeyYCoordinate: os.Getenv("STARK_PUBLICKKEY_YCOORDINATE"),
 		LogFile:                   os.Getenv("LOG_FILE"),
 		SQLDriver:                 os.Getenv("SQLDRIVER"),
-		DbName:                    os.Getenv("DBNAME"),
+		DbName1:                   os.Getenv("DBNAME1"),
+		DbName2:                   os.Getenv("DBNAME2"),
 		Durations:                 durations,
 		TradeDuration:             durations[os.Getenv("trade_duration")],
-		ProductCode:               Productcode,
+		AssetName:                 assetName,
 	}
 
 	env = Env

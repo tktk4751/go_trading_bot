@@ -1,5 +1,7 @@
 package analytics
 
+var AccountBalance float64 = 10000.000
+
 type Analytics struct {
 
 	//計算不要の､ベースとなるデータたち

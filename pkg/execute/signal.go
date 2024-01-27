@@ -1,18 +1,17 @@
 package execute
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 	"time"
+	"v1/pkg/config"
 
 	"database/sql"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// var DbConnection *sql.DB
+var db *sql.DB
 
 type SignalEvent struct {
 	Time         time.Time `json:"time"`
@@ -24,12 +23,30 @@ type SignalEvent struct {
 	Size         float64   `json:"size"`
 }
 
-func DBOpen(tableName string) (*sql.DB, error) {
+func (s *SignalEvent) GetTableName() string {
+	tableName := s.StrategyName + "_" + s.AssetName + "_" + s.Duration
+	return tableName
+}
 
-	db, err := sql.Open("sqlite3", "./db/trade_record.db")
+func init() {
+	var err error
+	db, err = sql.Open(config.GetEnv().SQLDriver, config.GetEnv().DbName2)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// データベースへの接続を確認
+	db.Ping()
+	err = db.Ping()
+	if err != nil {
+		log.Println("Failed to connect to the database:", err)
+	}
+
+}
+
+func CreateDBTable(tableName string) (*sql.DB, error) {
+
+	var err error
 
 	// データベースへの接続を確認
 	err = db.Ping()
@@ -39,7 +56,7 @@ func DBOpen(tableName string) (*sql.DB, error) {
 
 	createTableCmd := fmt.Sprintf(`
 	CREATE TABLE IF NOT EXISTS %s (
-		time TEXT NOT NULL,
+		time TEXT NOT NULL UNIQUE,
 		strategy_name TEXT NOT NULL,
 		asset_name TEXT NOT NULL,
 		duration TEXT NOT NULL,
@@ -56,73 +73,27 @@ func DBOpen(tableName string) (*sql.DB, error) {
 	return db, nil
 }
 
-// func (s *SignalEvent) Save(db *sql.DB, strategyName string, assetName string, duration string) bool {
-
-// 	if db == nil {
-// 		log.Println("database connection is nil")
-// 		return false
-// 	}
-// 	tableName := strategyName + "_" + assetName + "_" + duration
-
-// 	cmd := fmt.Sprintf("INSERT OR IGNORE INTO %s (time, asset_name, strategy_name, duration, side, price, size) VALUES (?, ?, ?, ?, ?, ?, ?)", tableName)
-// 	_, err := db.Exec(cmd, s.Time.Format(time.RFC3339), s.AssetName, strategyName, duration, s.Side, s.Price, s.Size)
-// 	if err != nil {
-// 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-// 			log.Println(err)
-// 			return true
-// 		}
-// 		return false
-// 	}
-
-// 	return true
-// }
-
-func (s *SignalEvent) Save(db *sql.DB, strategyName string, assetName string, duration string) bool {
+func (s *SignalEvent) Save() bool {
 
 	if db == nil {
 		log.Println("database connection is nil")
 		return false
 	}
-	tableName := strategyName + "_" + assetName + "_" + duration
 
-	// var err error
-
-	// createTableCmd := fmt.Sprintf(`
-	// CREATE TABLE IF NOT EXISTS %s (
-	// 	time TEXT NOT NULL,
-	// 	strategy_name TEXT NOT NULL,
-	// 	asset_name TEXT NOT NULL,
-	// 	duration TEXT NOT NULL,
-	// 	side TEXT NOT NULL,
-	// 	price REAL NOT NULL,
-	// 	size REAL NOT NULL,
-	// 	PRIMARY KEY(time, asset_name, strategy_name, duration)
-	// 	)`, tableName)
-
-	// _, err = db.Exec(createTableCmd)
-	// if err != nil {
-	// 	log.Printf("Error creating table: %v", err)
-	// 	// return false
-	// }
-
-	cmd := fmt.Sprintf("INSERT INTO %s (time, asset_name, strategy_name, duration, side, price, size) VALUES (?, ?, ?, ?, ?, ?, ?)", tableName)
-	log.Printf("Executing query: %s\n", cmd) // ログ出力を追加
-
-	result, err := db.Exec(cmd, s.Time.Format(time.RFC3339), s.AssetName, strategyName, duration, s.Side, s.Price, s.Size)
+	// Check the database connection
+	err := db.Ping()
 	if err != nil {
-		log.Printf("Error executing query: %v\n", err) // エラーメッセージを詳細にする
-		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-			log.Println(err)
-			return true
-		}
+		log.Println("Failed to connect to the database:", err)
 		return false
 	}
 
-	rowsAffected, err := result.RowsAffected() // 影響を受けた行数を取得
+	tableName := s.StrategyName + "_" + s.AssetName + "_" + s.Duration
+
+	cmd := fmt.Sprintf("INSERT OR IGNORE INTO %s (time, asset_name, strategy_name, duration, side, price, size) VALUES (?, ?, ?, ?, ?, ?, ?)", tableName)
+	_, err = db.Exec(cmd, s.Time.Format(time.RFC3339), s.AssetName, s.StrategyName, s.Duration, s.Side, s.Price, s.Size)
 	if err != nil {
-		log.Printf("Error getting rows affected: %v\n", err) // エラーメッセージを詳細にする
-	} else {
-		log.Printf("Rows affected: %d\n", rowsAffected) // 影響を受けた行数をログに出力
+		log.Println("Failed to insert data:", err)
+		return false
 	}
 
 	return true
@@ -207,53 +178,132 @@ func (s *SignalEvents) CanSell(t time.Time) bool {
 	return false
 }
 
-// func (s *SignalEvents) Buy(db *sql.DB, strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
+func WinRate(s *SignalEvents) float64 {
+	var winCount, totalCount float64
+	var buyPrice float64
 
-// 	tableName := strategyName + "_" + assetName + "_" + duration
+	for _, signal := range s.Signals {
+		if signal.Side == "BUY" {
+			buyPrice = signal.Price
+		} else if signal.Side == "SELL" {
+			totalCount++
+			if signal.Price > buyPrice {
+				winCount++
+			}
+			buyPrice = 0 // Reset buy price after a sell
+		}
+	}
 
-// 	// トランザクションを開始
-// 	tx, err := db.Begin()
-// 	if err != nil {
-// 		return false
+	if totalCount == 0 {
+		return 0
+	}
+
+	return winCount / totalCount
+}
+
+const accountBalance float64 = 10000.0
+
+// func (s *SignalEvents) TotalProfit() float64 {
+// 	var totalProfit float64 = 0.0
+// 	var buyPrice, sellPrice float64
+// 	var buySize, sellSize float64
+
+// 	for _, signal := range s.Signals {
+// 		if signal.Side == "BUY" {
+// 			buyPrice = signal.Price
+// 			buySize = signal.Size
+// 		} else if signal.Side == "SELL" {
+// 			sellPrice = signal.Price
+// 			sellSize = signal.Size
+// 			profit := (sellPrice - buyPrice) * min(buySize, sellSize) / buyPrice * accountBalance
+// 			if profit > 0 {
+// 				totalProfit += profit
+// 			}
+// 		}
 // 	}
-// 	// トランザクションの終了を遅延実行
-// 	defer tx.Commit()
 
-// 	if !s.CanBuy(date) {
-// 		fmt.Println("買えません")
-// 		return false
-// 	}
-// 	signalEvent := SignalEvent{
-// 		Time:         date,
-// 		StrategyName: strategyName,
-// 		AssetName:    assetName,
-// 		Duration:     duration,
-// 		Side:         "BUY",
-// 		Price:        price,
-// 		Size:         size,
-// 	}
-
-// 	s.Signals = append(s.Signals, signalEvent)
-// 	fmt.Println("買ったぜ")
-
-// 	insertSQL := fmt.Sprintf(`INSERT OR IGNORE INTO %s (
-// 		time, asset_name, strategy_name, duration, side, price, size
-// 	) VALUES (?, ?, ?, ?, ?, ?, ?)`, tableName)
-
-// 	_, error := tx.Exec(insertSQL, signalEvent.Time.Format(time.RFC3339), signalEvent.AssetName, strategyName, duration, signalEvent.Side, signalEvent.Price, signalEvent.Size)
-
-// 	if error != nil {
-// 		return false
-// 	}
-
-// 	return true
-
+// 	return totalProfit
 // }
 
-func (s *SignalEvents) Buy(db *sql.DB, strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
+// func (s *SignalEvents) TotalLoss() float64 {
+// 	var totalLoss float64 = 0.0
+// 	var buyPrice, sellPrice float64
+// 	var buySize, sellSize float64
+
+// 	for _, signal := range s.Signals {
+// 		if signal.Side == "BUY" {
+// 			buyPrice = signal.Price
+// 			buySize = signal.Size
+// 		} else if signal.Side == "SELL" {
+// 			sellPrice = signal.Price
+// 			sellSize = signal.Size
+// 			profit := (sellPrice - buyPrice) * min(buySize, sellSize) / buyPrice * accountBalance
+// 			if profit < 0 {
+// 				totalLoss -= profit
+// 			}
+// 		}
+// 	}
+
+// 	return totalLoss
+// }
+
+// func (s *SignalEvents) ProfitFactor() float64 {
+// 	totalProfit := s.TotalProfit()
+// 	totalLoss := s.TotalLoss()
+
+// 	if totalLoss == 0 {
+// 		return math.Inf(1)
+// 	}
+
+// 	return totalProfit / totalLoss
+// }
+
+// func (s *SignalEvents) NetProfit() float64 {
+// 	totalProfit := s.TotalProfit()
+// 	totalLoss := s.TotalLoss()
+
+// 	return totalProfit - totalLoss
+// }
+
+// func (s *SignalEvents) MaxDrawdown() float64 {
+// 	var maxPeakPrice float64 = 0.0
+// 	var maxDrawdown float64 = 0.0
+
+// 	for _, signal := range s.Signals {
+// 		if signal.Side == "SELL" {
+// 			if signal.Price > maxPeakPrice {
+// 				maxPeakPrice = signal.Price
+// 			} else {
+// 				drawdown := (maxPeakPrice - signal.Price) / maxPeakPrice * accountBalance
+// 				if drawdown > maxDrawdown {
+// 					maxDrawdown = drawdown
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	return maxDrawdown
+// }
+
+// func RiskSizeCalculator(s *SignalEvents) float64 {
+
+// 	w := WinRate(s)
+// 	r := s.ProfitFactor()
+// 	d := s.MaxDrawdown()
+
+// 	// f := (w*(r+1)-1)/r - (d*(d*2+1)-1)/r - 0.002
+// 	f := (((w*(r+w+w)-(1+d))/(r-w*d) - 0.002) * w) / 1.618
+
+// 	if f < 0 || r <= 1.05 || d > 0.45 {
+// 		fmt.Print("トレード禁止")
+// 		return 0
+// 	}
+// 	return f
+// }
+
+func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
 
 	if !s.CanBuy(date) {
-		fmt.Println("買えません")
 		return false
 	}
 
@@ -268,17 +318,21 @@ func (s *SignalEvents) Buy(db *sql.DB, strategyName string, assetName string, du
 		Size:     size,
 	}
 	if save {
-		signalEvent.Save(db, strategyName, assetName, duration)
-		fmt.Println("DBに保存完了")
+		signalEvent.Save()
+
+	} else {
+
+		return false
 	}
 	s.Signals = append(s.Signals, signalEvent)
+
 	return true
 }
 
-func (s *SignalEvents) Sell(db *sql.DB, strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
+func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
 
 	if !s.CanSell(date) {
-		fmt.Println("売れません")
+
 		return false
 	}
 	signalEvent := SignalEvent{
@@ -292,51 +346,108 @@ func (s *SignalEvents) Sell(db *sql.DB, strategyName string, assetName string, d
 	}
 
 	if save {
-		signalEvent.Save(db, strategyName, assetName, duration)
-		fmt.Println("DBに保存完了")
+		signalEvent.Save()
+
 	}
 
 	s.Signals = append(s.Signals, signalEvent)
 	return true
 }
 
-func (s *SignalEvents) Profit() float64 {
-	total := 0.0
-	beforeSell := 0.0
-	isHolding := false
-	for i, signalEvent := range s.Signals {
-		if i == 0 && signalEvent.Side == "SELL" {
-			continue
-		}
-		if signalEvent.Side == "BUY" {
-			total -= signalEvent.Price * signalEvent.Size
-			isHolding = true
-		}
-		if signalEvent.Side == "SELL" {
-			total += signalEvent.Price * signalEvent.Size
-			isHolding = false
-			beforeSell = total
-		}
-	}
-	if isHolding {
-		return beforeSell
-	}
-	return total
-}
+// func (s *SignalEvents) Profit() float64 {
+// 	var profit float64 = 0.0
+// 	var buyPrice, sellPrice float64
+// 	var buySize, sellSize float64
 
-func (s SignalEvents) MarshalJSON() ([]byte, error) {
-	value, err := json.Marshal(&struct {
-		Signals []SignalEvent `json:"signals,omitempty"`
-		Profit  float64       `json:"profit,omitempty"`
-	}{
-		Signals: s.Signals,
-		Profit:  s.Profit(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return value, err
-}
+// 	for _, signal := range s.Signals {
+// 		if signal.Side == "BUY" {
+// 			buyPrice = signal.Price
+// 			buySize = signal.Size
+// 		} else if signal.Side == "SELL" {
+// 			sellPrice = signal.Price
+// 			sellSize = signal.Size
+// 			profit += (sellPrice - buyPrice) * min(buySize, sellSize)
+// 		}
+// 	}
+
+// 	return profit
+// }
+
+// func (s *SignalEvents) Profit() float64 {
+// 	total := 0.0
+// 	beforeSell := 0.0
+// 	isHolding := false
+// 	isShort := false
+// 	for i, signalEvent := range s.Signals {
+// 		if i == 0 && signalEvent.Side == "SELL" {
+// 			isShort = true
+// 		}
+// 		if signalEvent.Side == "BUY" {
+// 			if isShort {
+// 				total += beforeSell - signalEvent.Price*signalEvent.Size
+// 				isShort = false
+
+// 				total -= signalEvent.Price * signalEvent.Size
+// 				isHolding = true
+// 			}
+// 		}
+// 		if signalEvent.Side == "SELL" {
+// 			if isHolding {
+// 				total += signalEvent.Price * signalEvent.Size
+// 				isHolding = false
+// 				beforeSell = total
+// 			} else {
+// 				beforeSell = signalEvent.Price * signalEvent.Size
+// 				isShort = true
+// 			}
+// 		}
+// 	}
+// 	if isHolding {
+// 		return beforeSell
+// 	}
+// 	if isShort {
+// 		return total + beforeSell
+// 	}
+// 	return total
+// }
+
+// func (s *SignalEvents) Profit() float64 {
+// 	total := 0.0
+// 	beforeSell := 0.0
+// 	isHolding := false
+// 	for i, signalEvent := range s.Signals {
+// 		if i == 0 && signalEvent.Side == "SELL" {
+// 			continue
+// 		}
+// 		if signalEvent.Side == "BUY" {
+// 			total -= signalEvent.Price * signalEvent.Size
+// 			isHolding = true
+// 		}
+// 		if signalEvent.Side == "SELL" {
+// 			total += signalEvent.Price * signalEvent.Size
+// 			isHolding = false
+// 			beforeSell = total
+// 		}
+// 	}
+// 	if isHolding {
+// 		return beforeSell
+// 	}
+// 	return total
+// }
+
+// func (s SignalEvents) MarshalJSON() ([]byte, error) {
+// 	value, err := json.Marshal(&struct {
+// 		Signals []SignalEvent `json:"signals,omitempty"`
+// 		Profit  float64       `json:"profit,omitempty"`
+// 	}{
+// 		Signals: s.Signals,
+// 		Profit:  s.Profit(),
+// 	})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return value, err
+// }
 
 func (s *SignalEvents) CollectAfter(time time.Time) *SignalEvents {
 	for i, signal := range s.Signals {

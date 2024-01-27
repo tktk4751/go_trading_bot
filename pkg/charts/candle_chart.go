@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 	"v1/pkg/data"
-	"v1/pkg/data/query"
+	dbquery "v1/pkg/data/query"
 	"v1/pkg/indicator/indicators"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -22,7 +22,7 @@ type klineData struct {
 var assetName string = "SOLUSDT"
 var duration string = "4h"
 
-var datas, err = query.GetKlineData(assetName, duration)
+var datas, err = dbquery.GetKlineData(assetName, duration)
 
 var kd, _ = MapKlineData(datas)
 
@@ -240,7 +240,7 @@ func klineWithDonchain() *charts.Kline {
 		lowdata[i] = k.data[2]
 	}
 
-	donchain := indicators.Donchain(highdata, lowdata, 200)
+	donchain := indicators.Donchain(highdata, lowdata, 40)
 
 	// Convert ma20 to []opts.LineData
 	donchainLineHighData := make([]opts.LineData, len(donchain.High))
