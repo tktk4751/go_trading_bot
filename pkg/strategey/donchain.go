@@ -5,13 +5,17 @@ import (
 	"v1/pkg/analytics"
 	"v1/pkg/execute"
 	"v1/pkg/indicator/indicators"
-
-	"github.com/markcheno/go-talib"
 )
 
-func (df *DataFrameCandle) DonchainStrategy(period int) *execute.SignalEvents {
+const StrategyName = "DBO"
 
-	StrategyName := "DBO"
+func TradeSize(persetege float64) float64 {
+
+	size := AccountBalance * persetege
+	return size
+}
+
+func (df *DataFrameCandle) DonchainStrategy(period int) *execute.SignalEvents {
 
 	lenCandles := len(df.Candles)
 	if lenCandles <= period {
@@ -24,30 +28,37 @@ func (df *DataFrameCandle) DonchainStrategy(period int) *execute.SignalEvents {
 
 	close := df.Closes()
 
-	rsi := talib.Rsi(close, 14)
+	buySize := 0.0
+	isHolding := false
 
 	for i := 1; i < lenCandles; i++ {
+
 		if i < period {
 			continue
 		}
-		if close[i] > donchain.High[i-1] {
-			signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, 0.2, true)
-
+		if close[i] > donchain.High[i-1] && !isHolding {
+			buySize = TradeSize(0.2) / df.Candles[i].Close
+			signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
+			isHolding = true
 		}
-		if close[i] < donchain.Low[i-1] || rsi[i] < 16 {
-			signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, 0.2, true)
-
+		if close[i] < donchain.Low[i-1] && isHolding {
+			signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
+			isHolding = false
 		}
 
 	}
+
 	return signalEvents
 
 }
 
 func (df *DataFrameCandle) OptimizeProfitDonchain() (performance float64, bestPeriod int) {
+	if df == nil {
+		return 0.0, 0
+	}
 	bestPeriod = 40
 
-	for period := 3; period < 333; period++ {
+	for period := 10; period < 333; period++ {
 
 		signalEvents := df.DonchainStrategy(period)
 		if signalEvents == nil {
@@ -63,6 +74,7 @@ func (df *DataFrameCandle) OptimizeProfitDonchain() (performance float64, bestPe
 	}
 
 	fmt.Println("最高利益", performance, "最適なピリオド", bestPeriod)
+
 	return performance, bestPeriod
 }
 

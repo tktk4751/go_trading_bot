@@ -41,6 +41,10 @@ func calculateReturns(s *execute.SignalEvents) []float64 {
 }
 
 func SharpeRatio(s *execute.SignalEvents, riskFreeRate float64) float64 {
+
+	if s == nil {
+		return 0.0
+	}
 	// Calculate the returns
 	returns := calculateReturns(s)
 

@@ -4,7 +4,7 @@ import (
 	"v1/pkg/execute"
 )
 
-var AccountBalance float64 = 10000.000
+var AccountBalance float64 = 1000.000
 
 func Profit(s *execute.SignalEvents) float64 {
 	var profit float64 = 0.0

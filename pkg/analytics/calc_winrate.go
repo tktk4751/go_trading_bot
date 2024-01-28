@@ -31,6 +31,10 @@ type Winrate_arg struct {
 // }
 
 func WinRate(s *execute.SignalEvents) float64 {
+
+	if s == nil {
+		return 0.0
+	}
 	var profitCount, lossCount float64
 
 	for i := 0; i < len(s.Signals)-1; i += 2 {

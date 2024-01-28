@@ -1,6 +1,14 @@
 package analytics
 
-var AccountBalance float64 = 10000.000
+import (
+	"v1/pkg/execute"
+)
+
+var AccountBalance float64 = 1000.000
+
+var s *execute.SignalEvents
+
+// var df, _ = dbquery.GetCandleData(s.AssetName, s.Duration)
 
 type Analytics struct {
 

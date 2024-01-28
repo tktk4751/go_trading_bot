@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	github.com/acroca/go-symbols v0.1.1 // indirect
 	github.com/go-echarts/go-echarts/v2 v2.3.3 // indirect
 	github.com/iamjinlei/go-tachart v0.0.0-20210729041122-12052a3368c8 // indirect
 	github.com/iamjinlei/go-tart v0.0.0-20210623083942-ceb57e98706b // indirect
@@ -25,9 +26,13 @@ require (
 	github.com/markcheno/go-talib v0.0.0-20190307022042-cd53a9264d70 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/nsf/gocode v0.0.0-20230322162601-b672b49f3818 // indirect
+	github.com/ramya-rao-a/go-outline v0.0.0-20210608161538-9736a4bde949 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 )

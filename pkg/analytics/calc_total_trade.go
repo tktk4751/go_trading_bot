@@ -2,17 +2,11 @@ package analytics
 
 import "v1/pkg/execute"
 
-func TotalTrades(s *execute.SignalEvents) float64 {
-	var totalCount float64
-
-	for i := 0; i < len(s.Signals)-1; i += 2 {
-		totalCount++
-	}
-
-	return totalCount
-}
-
 func TotalTrades(s *execute.SignalEvents) int {
+
+	if s == nil {
+		return 0.0
+	}
 	var totalTrades int
 
 	for _, signal := range s.Signals {
@@ -25,6 +19,10 @@ func TotalTrades(s *execute.SignalEvents) int {
 }
 
 func WinningTrades(s *execute.SignalEvents) int {
+
+	if s == nil {
+		return 0.0
+	}
 	var winningTrades int
 	var buyPrice float64
 
@@ -43,6 +41,10 @@ func WinningTrades(s *execute.SignalEvents) int {
 }
 
 func LosingTrades(s *execute.SignalEvents) int {
+
+	if s == nil {
+		return 0.0
+	}
 	var losingTrades int
 	var buyPrice float64
 

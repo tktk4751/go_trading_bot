@@ -14,7 +14,6 @@ import (
 var db *sql.DB
 
 type SignalEvent struct {
-	Id           string
 	Time         time.Time `json:"time"`
 	StrategyName string    `json:"strategy_name"`
 	AssetName    string    `json:"product_code"`
@@ -57,7 +56,7 @@ func CreateDBTable(tableName string) (*sql.DB, error) {
 
 	createTableCmd := fmt.Sprintf(`
 	CREATE TABLE IF NOT EXISTS %s (
-		id TEXT NOT NULL UNIQUE AUTO_INCREMENT,
+		ID int NOT NULL PRIMARY KEY, 
 		time TEXT NOT NULL UNIQUE,
 		strategy_name TEXT NOT NULL,
 		asset_name TEXT NOT NULL,
@@ -154,7 +153,7 @@ func GetSignalEventsAfterTime(db *sql.DB, strategyName string, assetName string,
 	}
 	return &signalEvents
 }
-func (s *SignalEvents) CanBuy(t time.Time) bool {
+func (s *SignalEvents) CanLong(t time.Time) bool {
 	lenSignals := len(s.Signals)
 	if lenSignals == 0 {
 		return true
@@ -167,7 +166,7 @@ func (s *SignalEvents) CanBuy(t time.Time) bool {
 	return false
 }
 
-func (s *SignalEvents) CanSell(t time.Time) bool {
+func (s *SignalEvents) CanShort(t time.Time) bool {
 	lenSignals := len(s.Signals)
 	if lenSignals == 0 {
 		return false
@@ -203,122 +202,10 @@ func WinRate(s *SignalEvents) float64 {
 	return winCount / totalCount
 }
 
-// const ccountBalance float64 = 10000.0
+func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) float64 {
 
-// func (s *SignalEvents) TotalProfit() float64 {
-// 	var totalProfit float64 = 0.0
-// 	var buyPrice, sellPrice float64
-// 	var buySize, sellSize float64
-
-// 	for _, signal := range s.Signals {
-// 		if signal.Side == "BUY" {
-// 			buyPrice = signal.Price
-// 			buySize = signal.Size
-// 		} else if signal.Side == "SELL" {
-// 			sellPrice = signal.Price
-// 			sellSize = signal.Size
-// 			profit := (sellPrice - buyPrice) * min(buySize, sellSize) / buyPrice * accountBalance
-// 			if profit > 0 {
-// 				totalProfit += profit
-// 			}
-// 		}
-// 	}
-
-// 	return totalProfit
-// }
-
-// func (s *SignalEvents) TotalLoss() float64 {
-// 	var totalLoss float64 = 0.0
-// 	var buyPrice, sellPrice float64
-// 	var buySize, sellSize float64
-
-// 	for _, signal := range s.Signals {
-// 		if signal.Side == "BUY" {
-// 			buyPrice = signal.Price
-// 			buySize = signal.Size
-// 		} else if signal.Side == "SELL" {
-// 			sellPrice = signal.Price
-// 			sellSize = signal.Size
-// 			profit := (sellPrice - buyPrice) * min(buySize, sellSize) / buyPrice * accountBalance
-// 			if profit < 0 {
-// 				totalLoss -= profit
-// 			}
-// 		}
-// 	}
-
-// 	return totalLoss
-// }
-
-// func (s *SignalEvents) ProfitFactor() float64 {
-// 	totalProfit := s.TotalProfit()
-// 	totalLoss := s.TotalLoss()
-
-// 	if totalLoss == 0 {
-// 		return math.Inf(1)
-// 	}
-
-// 	return totalProfit / totalLoss
-// }
-
-// func (s *SignalEvents) NetProfit() float64 {
-// 	totalProfit := s.TotalProfit()
-// 	totalLoss := s.TotalLoss()
-
-// 	return totalProfit - totalLoss
-// }
-
-// func (s *SignalEvents) MaxDrawdown() float64 {
-// 	var maxPeakPrice float64 = 0.0
-// 	var maxDrawdown float64 = 0.0
-
-// 	for _, signal := range s.Signals {
-// 		if signal.Side == "SELL" {
-// 			if signal.Price > maxPeakPrice {
-// 				maxPeakPrice = signal.Price
-// 			} else {
-// 				drawdown := (maxPeakPrice - signal.Price) / maxPeakPrice * accountBalance
-// 				if drawdown > maxDrawdown {
-// 					maxDrawdown = drawdown
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	return maxDrawdown
-// }
-
-// func RiskSizeCalculator(s *SignalEvents) float64 {
-
-// 	w := WinRate(s)
-// 	r := s.ProfitFactor()
-// 	d := s.MaxDrawdown()
-
-// 	// f := (w*(r+1)-1)/r - (d*(d*2+1)-1)/r - 0.002
-// 	f := (((w*(r+w+w)-(1+d))/(r-w*d) - 0.002) * w) / 1.618
-
-// 	if f < 0 || r <= 1.05 || d > 0.45 {
-// 		fmt.Print("トレード禁止")
-// 		return 0
-// 	}
-// 	return f
-// }
-
-func (s *SignalEvents) AdjustSize(percentage float64) float64 {
-
-	if len(s.Signals) == 0 {
-		// Handle the error appropriately. Here we return 0.
+	if !s.CanLong(date) {
 		return 0
-	}
-
-	return AccountBalance * percentage
-
-}
-
-func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, percentage float64, save bool) bool {
-	size := s.AdjustSize(percentage) / price
-
-	if !s.CanBuy(date) {
-		return false
 	}
 
 	signalEvent := SignalEvent{
@@ -336,16 +223,16 @@ func (s *SignalEvents) Buy(strategyName string, assetName string, duration strin
 
 	} else {
 
-		return false
+		return 0
 	}
 	s.Signals = append(s.Signals, signalEvent)
 
-	return true
+	return size // sizeを返す
 }
 
-func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, percentage float64, save bool) bool {
-	size := s.AdjustSize(percentage) / price
-	if !s.CanSell(date) {
+func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
+
+	if !s.CanShort(date) {
 
 		return false
 	}
@@ -367,6 +254,96 @@ func (s *SignalEvents) Sell(strategyName string, assetName string, duration stri
 	s.Signals = append(s.Signals, signalEvent)
 	return true
 }
+
+// func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, percentage float64, save bool) bool {
+// 	size := s.AdjustSize(percentage) / price
+// 	if !s.CanLong(date) {
+// 		return false
+// 	}
+
+// 	signalEvent := SignalEvent{
+// 		Time:         date,
+// 		StrategyName: strategyName,
+// 		AssetName:    assetName,
+
+// 		Duration: duration,
+// 		Side:     "BUY",
+// 		Price:    price,
+// 		Size:     size,
+// 	}
+// 	if save {
+// 		signalEvent.Save()
+
+// 	} else {
+
+// 		return false
+// 	}
+// 	s.Signals = append(s.Signals, signalEvent)
+
+// 	return true
+// }
+
+// // func (s *SignalEvents) ExitLong(strategyName string, assetName string, duration string, date time.Time, price, percentage float64, save bool) bool {
+
+// // 	if !s.CanExitLong(date) {
+// // 		return false
+// // 	}
+// // 	if len(s.Signals) > 0 {
+// // 		size := s.Signals[0].Size * percentage
+
+// // 		signalEvent := SignalEvent{
+// // 			Time:         date,
+// // 			StrategyName: strategyName,
+// // 			AssetName:    assetName,
+
+// // 			Duration: duration,
+// // 			Side:     "BUY",
+// // 			Price:    price,
+// // 			Size:     size,
+// // 		}
+// // 		if save {
+// // 			signalEvent.Save()
+
+// // 		} else {
+
+// // 			return false
+// // 		}
+// // 		s.Signals = append(s.Signals, signalEvent)
+// // 	} else {
+// // 		return false
+// // 	}
+
+// // 	if !s.CanExitLong(date) {
+// // 		return false
+// // 	}
+
+// // 	return true
+// // }
+
+// func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, percentage float64, save bool) bool {
+// 	size := s.AdjustSize(percentage) / price
+// 	if !s.CanShort(date) {
+
+// 		return false
+// 	}
+// 	signalEvent := SignalEvent{
+// 		Time:         date,
+// 		StrategyName: strategyName,
+// 		AssetName:    assetName,
+// 		Duration:     duration,
+// 		Side:         "SELL",
+// 		Price:        price,
+// 		Size:         size,
+// 	}
+
+// 	if save {
+// 		signalEvent.Save()
+
+// 	}
+
+// 	s.Signals = append(s.Signals, signalEvent)
+// 	return true
+// }
 
 // func (s *SignalEvents) Profit() float64 {
 // 	var profit float64 = 0.0

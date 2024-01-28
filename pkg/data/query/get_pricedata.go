@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"v1/pkg/config"
 	"v1/pkg/data"
 
 	"time"
@@ -23,7 +24,7 @@ func ConvertRFC3339ToTime(s string) (time.Time, error) {
 
 func GetCandleData(assetName string, duration string) ([]data.Candle, error) {
 
-	db, err := sql.Open("sqlite3", "db/kline.db")
+	db, err := sql.Open("sqlite3", config.GetEnv().DbName1)
 	if err != nil {
 		log.Fatal(err)
 	}
