@@ -14,6 +14,7 @@ import (
 var db *sql.DB
 
 type SignalEvent struct {
+	Id           string
 	Time         time.Time `json:"time"`
 	StrategyName string    `json:"strategy_name"`
 	AssetName    string    `json:"product_code"`
@@ -56,6 +57,7 @@ func CreateDBTable(tableName string) (*sql.DB, error) {
 
 	createTableCmd := fmt.Sprintf(`
 	CREATE TABLE IF NOT EXISTS %s (
+		id TEXT NOT NULL UNIQUE AUTO_INCREMENT,
 		time TEXT NOT NULL UNIQUE,
 		strategy_name TEXT NOT NULL,
 		asset_name TEXT NOT NULL,
@@ -201,7 +203,7 @@ func WinRate(s *SignalEvents) float64 {
 	return winCount / totalCount
 }
 
-const accountBalance float64 = 10000.0
+// const ccountBalance float64 = 10000.0
 
 // func (s *SignalEvents) TotalProfit() float64 {
 // 	var totalProfit float64 = 0.0
@@ -301,7 +303,19 @@ const accountBalance float64 = 10000.0
 // 	return f
 // }
 
-func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
+func (s *SignalEvents) AdjustSize(percentage float64) float64 {
+
+	if len(s.Signals) == 0 {
+		// Handle the error appropriately. Here we return 0.
+		return 0
+	}
+
+	return AccountBalance * percentage
+
+}
+
+func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, percentage float64, save bool) bool {
+	size := s.AdjustSize(percentage) / price
 
 	if !s.CanBuy(date) {
 		return false
@@ -329,8 +343,8 @@ func (s *SignalEvents) Buy(strategyName string, assetName string, duration strin
 	return true
 }
 
-func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
-
+func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, percentage float64, save bool) bool {
+	size := s.AdjustSize(percentage) / price
 	if !s.CanSell(date) {
 
 		return false

@@ -2,6 +2,7 @@ package strategey
 
 import (
 	"fmt"
+	"v1/pkg/analytics"
 	"v1/pkg/execute"
 	"v1/pkg/indicator/indicators"
 
@@ -30,11 +31,11 @@ func (df *DataFrameCandle) DonchainStrategy(period int) *execute.SignalEvents {
 			continue
 		}
 		if close[i] > donchain.High[i-1] {
-			signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, 1.0, true)
+			signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, 0.2, true)
 
 		}
-		if close[i] < donchain.Low[i-1] || rsi[i] < 13 {
-			signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, 1.0, true)
+		if close[i] < donchain.Low[i-1] || rsi[i] < 16 {
+			signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, 0.2, true)
 
 		}
 
@@ -43,10 +44,10 @@ func (df *DataFrameCandle) DonchainStrategy(period int) *execute.SignalEvents {
 
 }
 
-func (df *DataFrameCandle) OptimizeDonchain() (performance float64, bestPeriod int) {
+func (df *DataFrameCandle) OptimizeProfitDonchain() (performance float64, bestPeriod int) {
 	bestPeriod = 40
 
-	for period := 5; period < 300; period++ {
+	for period := 3; period < 333; period++ {
 
 		signalEvents := df.DonchainStrategy(period)
 		if signalEvents == nil {
@@ -61,7 +62,29 @@ func (df *DataFrameCandle) OptimizeDonchain() (performance float64, bestPeriod i
 
 	}
 
-	fmt.Println("利益", performance, "最適なピリオド", bestPeriod)
+	fmt.Println("最高利益", performance, "最適なピリオド", bestPeriod)
+	return performance, bestPeriod
+}
+
+func (df *DataFrameCandle) OptimizeWinRateDonchain() (performance float64, bestPeriod int) {
+	bestPeriod = 40
+
+	for period := 10; period < 333; period++ {
+
+		signalEvents := df.DonchainStrategy(period)
+		if signalEvents == nil {
+			continue
+		}
+		winrate := analytics.WinRate(signalEvents)
+		if performance < winrate {
+			performance = winrate
+			bestPeriod = period
+
+		}
+
+	}
+
+	fmt.Println("最高勝率", performance*100, "% ", "最適なピリオド", bestPeriod)
 	return performance, bestPeriod
 }
 

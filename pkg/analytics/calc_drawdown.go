@@ -7,14 +7,17 @@ func MaxDrawdown(s *execute.SignalEvents) float64 {
 	var maxDrawdown float64 = 0.0
 
 	for _, signal := range s.Signals {
-		if signal.Side == "SELL" {
+		if signal.Side == "BUY" {
 			if signal.Price > maxPeakPrice {
 				maxPeakPrice = signal.Price
-			} else {
-				drawdown := (maxPeakPrice - signal.Price) / maxPeakPrice * AccountBalance
-				if drawdown > maxDrawdown {
-					maxDrawdown = drawdown
-				}
+			}
+		} else if signal.Side == "SELL" {
+			drawdown := (maxPeakPrice - signal.Price) / maxPeakPrice
+			if drawdown > maxDrawdown {
+				maxDrawdown = drawdown
+			}
+			if signal.Price > maxPeakPrice {
+				maxPeakPrice = signal.Price
 			}
 		}
 	}

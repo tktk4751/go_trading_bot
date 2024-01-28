@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 
 	// "net/http"
 	"v1/pkg/analytics"
@@ -44,16 +43,16 @@ import (
 //		return result
 //	}
 
-func logRequest(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
-		handler.ServeHTTP(w, r)
-	})
-}
+//	func logRequest(handler http.Handler) http.Handler {
+//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//			log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+//			handler.ServeHTTP(w, r)
+//		})
+//	}
 func main() {
 	strategyName := "DBO"
-	assetName := "LINKUSDT"
-	duration := "30m"
+	assetName := "ARBUSDT"
+	duration := "1h"
 	tableName := strategyName + "_" + assetName + "_" + duration
 
 	_, err := execute.CreateDBTable(tableName)
@@ -63,7 +62,7 @@ func main() {
 
 	df, _ := strategey.GetCandleData(assetName, duration)
 
-	profit, period := df.OptimizeDonchain()
+	profit, period := df.OptimizeProfitDonchain()
 
 	if profit > 0 {
 
@@ -71,17 +70,30 @@ func main() {
 
 	}
 
-	l, lr := analytics.FinalBalance(df.Signal)
+	winrate, period := df.OptimizeWinRateDonchain()
 
-	fmt.Println(df.Signal)
+	if winrate > 0 {
+
+		df.Signal = df.DonchainStrategy(period)
+
+	}
+
+	l, lr := analytics.FinalBalance(df.Signal)
+	d := analytics.MaxDrawdown(df.Signal)
+	dr := d * 100
+
+	// fmt.Println(df.Signal)
+
+	fmt.Println(tableName)
 	fmt.Println("初期残高", analytics.AccountBalance)
 	fmt.Println("最終残高", l, "比率", lr)
 	fmt.Println("勝率", analytics.WinRate(df.Signal))
-	fmt.Println("総利益", analytics.TotalProfit(df.Signal))
-	fmt.Println("総損失", analytics.TotalLoss(df.Signal))
+	fmt.Println("総利益", analytics.Profit(df.Signal))
+	fmt.Println("総損失", analytics.Loss(df.Signal))
 	fmt.Println("プロフィットファクター", analytics.ProfitFactor(df.Signal))
-	fmt.Println("最大ドローダウン", analytics.MaxDrawdown(df.Signal))
+	fmt.Println("最大ドローダウン", dr, "% ")
 	fmt.Println("純利益", analytics.NetProfit(df.Signal))
+	fmt.Println("シャープレシオ", analytics.SharpeRatio(df.Signal, 0.06))
 
 	// s := execute.NewSignalEvents()
 
