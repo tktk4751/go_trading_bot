@@ -39,27 +39,71 @@ func Profit(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
-	total := 0.0
+	profit := 0.0
 	beforeSell := 0.0
 	isHolding := false
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
 	for i, signalEvent := range s.Signals {
 		if i == 0 && signalEvent.Side == "SELL" {
 			continue
 		}
 		if signalEvent.Side == "BUY" {
-			total -= signalEvent.Price * signalEvent.Size
+			profit -= signalEvent.Price * signalEvent.Size
 			isHolding = true
 		}
 		if signalEvent.Side == "SELL" {
-			total += signalEvent.Price * signalEvent.Size
+			profit += signalEvent.Price * signalEvent.Size
 			isHolding = false
-			beforeSell = total
+			beforeSell = profit
 		}
 	}
 	if isHolding {
 		return beforeSell
 	}
-	return total
+	return profit
+}
+
+func Profi2(s *execute.SignalEvents) float64 {
+
+	if s == nil {
+		return 0.0
+	}
+	profit := 0.0
+	buyPrice := 0.0
+	beforeSell := 0.0
+	isHolding := false
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
+	for i, signal := range s.Signals {
+
+		if i == 0 && signal.Side == "SELL" {
+			continue
+		}
+		if signal.Side != "BUY" && signal.Side != "SELL" {
+			return 0.0
+		}
+		if signal.Side == "BUY" {
+			buyPrice = signal.Price
+			isHolding = true
+		} else if signal.Side == "SELL" && buyPrice != 0.0 {
+			if signal.Price > buyPrice {
+				profit += (signal.Price - buyPrice) * signal.Size
+				isHolding = false
+				beforeSell = profit
+			}
+			buyPrice = 0 // Reset buy price after a sell
+		}
+		if isHolding {
+			return beforeSell
+		}
+	}
+
+	return profit
 }
 
 func Loss(s *execute.SignalEvents) float64 {

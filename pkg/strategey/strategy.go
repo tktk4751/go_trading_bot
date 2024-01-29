@@ -11,6 +11,8 @@ import (
 	"v1/pkg/execute"
 )
 
+var initialBalance float64 = 1000.00
+
 type DataFrameCandle struct {
 	AssetName string
 	Duration  string
@@ -155,8 +157,8 @@ func Result(s *execute.SignalEvents) {
 	name := n.StrategyName + "_" + n.AssetName + "_" + n.Duration
 
 	fmt.Println(name)
-	fmt.Println("初期残高", AccountBalance.GetBalance())
-	fmt.Println("最終残高", l, "比率", lr)
+	fmt.Println("初期残高", initialBalance)
+	fmt.Println("最終残高", l, lr)
 	fmt.Println("勝率", analytics.WinRate(s)*100, "%")
 	fmt.Println("総利益", analytics.Profit(s))
 	fmt.Println("総損失", analytics.Loss(s))

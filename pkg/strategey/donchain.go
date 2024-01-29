@@ -8,8 +8,6 @@ import (
 	"v1/pkg/indicator/indicators"
 )
 
-var AccountBalance = NewAccount(1000.00)
-
 func GetStrageyName() string {
 	return "DBO"
 }
@@ -17,7 +15,6 @@ func GetStrageyName() string {
 func (df *DataFrameCandle) DonchainStrategy(period int, account *Account) *execute.SignalEvents {
 	var StrategyName = "DBO"
 
-	// fmt.Println("アカウントバランス", account.Balance)
 	lenCandles := len(df.Candles)
 	if lenCandles <= period {
 		return nil
@@ -48,6 +45,8 @@ func (df *DataFrameCandle) DonchainStrategy(period int, account *Account) *execu
 			if account.Sell(df.Candles[i].Close) {
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
 				isHolding = false
+				buySize = 0.0
+				account.PositionSize = buySize
 
 			}
 		}
@@ -61,15 +60,20 @@ func (df *DataFrameCandle) OptimizeDonchainProfit() (performance float64, bestPe
 	if df == nil {
 		return 0.0, 0
 	}
+
 	bestPeriod = 40
+	account := NewAccount(1000)
 
 	for period := 10; period < 333; period++ {
 
-		signalEvents := df.DonchainStrategy(period, AccountBalance)
+		account.Balance = initialBalance
+		account.PositionSize = 0.0
+
+		signalEvents := df.DonchainStrategy(period, account)
 		if signalEvents == nil {
 			continue
 		}
-		profit := Profit(signalEvents)
+		profit := analytics.Profit(signalEvents)
 		if performance < profit {
 			performance = profit
 			bestPeriod = period
@@ -86,9 +90,14 @@ func (df *DataFrameCandle) OptimizeDonchainProfit() (performance float64, bestPe
 func (df *DataFrameCandle) OptimizeDonchainWinRate() (performance float64, bestPeriod int) {
 	bestPeriod = 40
 
+	account := NewAccount(1000)
+
 	for period := 10; period < 333; period++ {
 
-		signalEvents := df.DonchainStrategy(period, AccountBalance)
+		account.Balance = initialBalance
+		account.PositionSize = 0.0
+
+		signalEvents := df.DonchainStrategy(period, account)
 		if signalEvents == nil {
 			continue
 		}
@@ -108,8 +117,10 @@ func (df *DataFrameCandle) OptimizeDonchainWinRate() (performance float64, bestP
 func RunBacktestDonchain() {
 
 	strategyName := GetStrageyName()
-	assetName := "OPUSDT"
+	assetName := "ARBUSDT"
 	duration := "1h"
+
+	account := NewAccount(1000)
 
 	df, _ := GetCandleData(assetName, duration)
 
@@ -142,7 +153,7 @@ func RunBacktestDonchain() {
 
 	if performance > 0 {
 
-		df.Signal = df.DonchainStrategy(bestPeriod, AccountBalance)
+		df.Signal = df.DonchainStrategy(bestPeriod, account)
 
 	}
 
