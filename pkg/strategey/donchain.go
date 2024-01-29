@@ -2,21 +2,22 @@ package strategey
 
 import (
 	"fmt"
+	"log"
 	"v1/pkg/analytics"
 	"v1/pkg/execute"
 	"v1/pkg/indicator/indicators"
 )
 
-const StrategyName = "DBO"
+var AccountBalance = NewAccount(1000.00)
 
-func TradeSize(persetege float64) float64 {
-
-	size := AccountBalance * persetege
-	return size
+func GetStrageyName() string {
+	return "DBO"
 }
 
-func (df *DataFrameCandle) DonchainStrategy(period int) *execute.SignalEvents {
+func (df *DataFrameCandle) DonchainStrategy(period int, account *Account) *execute.SignalEvents {
+	var StrategyName = "DBO"
 
+	// fmt.Println("アカウントバランス", account.Balance)
 	lenCandles := len(df.Candles)
 	if lenCandles <= period {
 		return nil
@@ -37,22 +38,26 @@ func (df *DataFrameCandle) DonchainStrategy(period int) *execute.SignalEvents {
 			continue
 		}
 		if close[i] > donchain.High[i-1] && !isHolding {
-			buySize = TradeSize(0.2) / df.Candles[i].Close
-			signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
-			isHolding = true
+			buySize = account.TradeSize(0.2) / df.Candles[i].Close
+			if account.Buy(df.Candles[i].Close, buySize) {
+				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
+				isHolding = true
+			}
 		}
 		if close[i] < donchain.Low[i-1] && isHolding {
-			signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
-			isHolding = false
+			if account.Sell(df.Candles[i].Close) {
+				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
+				isHolding = false
+
+			}
 		}
 
 	}
-
 	return signalEvents
 
 }
 
-func (df *DataFrameCandle) OptimizeProfitDonchain() (performance float64, bestPeriod int) {
+func (df *DataFrameCandle) OptimizeDonchainProfit() (performance float64, bestPeriod int) {
 	if df == nil {
 		return 0.0, 0
 	}
@@ -60,7 +65,7 @@ func (df *DataFrameCandle) OptimizeProfitDonchain() (performance float64, bestPe
 
 	for period := 10; period < 333; period++ {
 
-		signalEvents := df.DonchainStrategy(period)
+		signalEvents := df.DonchainStrategy(period, AccountBalance)
 		if signalEvents == nil {
 			continue
 		}
@@ -78,12 +83,12 @@ func (df *DataFrameCandle) OptimizeProfitDonchain() (performance float64, bestPe
 	return performance, bestPeriod
 }
 
-func (df *DataFrameCandle) OptimizeWinRateDonchain() (performance float64, bestPeriod int) {
+func (df *DataFrameCandle) OptimizeDonchainWinRate() (performance float64, bestPeriod int) {
 	bestPeriod = 40
 
 	for period := 10; period < 333; period++ {
 
-		signalEvents := df.DonchainStrategy(period)
+		signalEvents := df.DonchainStrategy(period, AccountBalance)
 		if signalEvents == nil {
 			continue
 		}
@@ -100,51 +105,47 @@ func (df *DataFrameCandle) OptimizeWinRateDonchain() (performance float64, bestP
 	return performance, bestPeriod
 }
 
-// func DonchainStrategeyBacktest(assetName string, duration string) ([]bool, []bool, []bool, []bool) {
+func RunBacktestDonchain() {
 
-// 	var ohlc, e = query.GetOHLCData(assetName, duration)
-// 	if e != nil {
-// 		log.Fatal(e)
-// 	}
+	strategyName := GetStrageyName()
+	assetName := "OPUSDT"
+	duration := "1h"
 
-// 	var h []float64
-// 	var l []float64
-// 	var c []float64
+	df, _ := GetCandleData(assetName, duration)
 
-// 	for _, data := range ohlc {
-// 		h = append(h, data.High)
-// 		l = append(l, data.Low)
-// 		c = append(c, data.Close)
-// 	}
+	tableName := strategyName + "_" + assetName + "_" + duration
 
-// 	d := indicators.Donchain(h, l, 40)
+	_, err := execute.CreateDBTable(tableName)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-// 	var buySignals []bool
-// 	var sellSignals []bool
-// 	var shortExitSignals []bool
-// 	var longExitSignals []bool
+	// df, _ := strategey.GetCandleData(assetName, duration)
 
-// 	for i := range c {
-// 		var buySignal bool = false
-// 		var sellSignal bool = false
-// 		var shortExitSignal bool = false
-// 		var longExitSignal bool = false
+	// profit, period := df.OptimizeProfitDonchain()
 
-// 		if c[i] > d.High[i] {
-// 			buySignal = true
-// 			shortExitSignal = true
-// 		}
+	// if profit > 0 {
 
-// 		if c[i] < d.Low[i] {
-// 			sellSignal = true
-// 			longExitSignal = true
-// 		}
+	// 	df.Signal = df.DonchainStrategy(period)
 
-// 		buySignals = append(buySignals, buySignal)
-// 		sellSignals = append(sellSignals, sellSignal)
-// 		shortExitSignals = append(shortExitSignals, shortExitSignal)
-// 		longExitSignals = append(longExitSignals, longExitSignal)
-// 	}
+	// }
 
-// 	return buySignals, sellSignals, shortExitSignals, longExitSignals
-// }
+	// winrate, period := df.OptimizeWinRateDonchain()
+
+	// if winrate > 0 {
+
+	// 	df.Signal = df.DonchainStrategy(period)
+
+	// }
+
+	performance, bestPeriod := df.OptimizeDonchainProfit()
+
+	if performance > 0 {
+
+		df.Signal = df.DonchainStrategy(bestPeriod, AccountBalance)
+
+	}
+
+	Result(df.Signal)
+
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"v1/pkg/analytics"
 	"v1/pkg/data"
 	dbquery "v1/pkg/data/query"
 	"v1/pkg/execute"
@@ -95,6 +96,14 @@ func GetCandleData(assetName string, duration string) (*DataFrameCandle, error) 
 	return dfCandle, nil
 }
 
+func (df *DataFrameCandle) Time() []time.Time {
+	s := make([]time.Time, len(df.Candles))
+	for i, candle := range df.Candles {
+		s[i] = candle.Date
+	}
+	return s
+}
+
 func (df *DataFrameCandle) Closes() []float64 {
 	s := make([]float64, len(df.Candles))
 	for i, candle := range df.Candles {
@@ -125,4 +134,44 @@ func (df *DataFrameCandle) Volume() []float64 {
 		s[i] = candle.Volume
 	}
 	return s
+}
+
+func Result(s *execute.SignalEvents) {
+
+	if s == nil {
+		return
+	}
+
+	l, lr := analytics.FinalBalance(s)
+	d := analytics.MaxDrawdown(s)
+	dr := d * 100
+
+	ml, mt := analytics.MaxLossTrade(s)
+
+	// fmt.Println(s)
+
+	n := s.Signals[0]
+
+	name := n.StrategyName + "_" + n.AssetName + "_" + n.Duration
+
+	fmt.Println(name)
+	fmt.Println("初期残高", AccountBalance.GetBalance())
+	fmt.Println("最終残高", l, "比率", lr)
+	fmt.Println("勝率", analytics.WinRate(s)*100, "%")
+	fmt.Println("総利益", analytics.Profit(s))
+	fmt.Println("総損失", analytics.Loss(s))
+	fmt.Println("プロフィットファクター", analytics.ProfitFactor(s))
+	fmt.Println("最大ドローダウン", dr, "% ")
+	fmt.Println("純利益", analytics.NetProfit(s))
+	fmt.Println("シャープレシオ", analytics.SharpeRatio(s, 0.02))
+	fmt.Println("トータルトレード回数", analytics.TotalTrades(s))
+	fmt.Println("勝ちトレード回数", analytics.WinningTrades(s))
+	fmt.Println("負けトレード回数", analytics.LosingTrades(s))
+	fmt.Println("平均利益", analytics.AveregeProfit(s))
+	fmt.Println("平均損失", analytics.AveregeLoss(s))
+	fmt.Println("ペイオフレシオ", analytics.PayOffRatio(s))
+	fmt.Println("1トレードの最大損失と日時", ml, mt)
+	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
+
+	fmt.Println(s)
 }

@@ -179,33 +179,33 @@ func (s *SignalEvents) CanShort(t time.Time) bool {
 	return false
 }
 
-func WinRate(s *SignalEvents) float64 {
-	var winCount, totalCount float64
-	var buyPrice float64
+// func WinRate(s *SignalEvents) float64 {
+// 	var winCount, totalCount float64
+// 	var buyPrice float64
 
-	for _, signal := range s.Signals {
-		if signal.Side == "BUY" {
-			buyPrice = signal.Price
-		} else if signal.Side == "SELL" {
-			totalCount++
-			if signal.Price > buyPrice {
-				winCount++
-			}
-			buyPrice = 0 // Reset buy price after a sell
-		}
-	}
+// 	for _, signal := range s.Signals {
+// 		if signal.Side == "BUY" {
+// 			buyPrice = signal.Price
+// 		} else if signal.Side == "SELL" {
+// 			totalCount++
+// 			if signal.Price > buyPrice {
+// 				winCount++
+// 			}
+// 			buyPrice = 0 // Reset buy price after a sell
+// 		}
+// 	}
 
-	if totalCount == 0 {
-		return 0
-	}
+// 	if totalCount == 0 {
+// 		return 0
+// 	}
 
-	return winCount / totalCount
-}
+// 	return winCount / totalCount
+// }
 
-func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) float64 {
+func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
 
 	if !s.CanLong(date) {
-		return 0
+		return false
 	}
 
 	signalEvent := SignalEvent{
@@ -223,11 +223,11 @@ func (s *SignalEvents) Buy(strategyName string, assetName string, duration strin
 
 	} else {
 
-		return 0
+		return false
 	}
 	s.Signals = append(s.Signals, signalEvent)
 
-	return size // sizeを返す
+	return true
 }
 
 func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {

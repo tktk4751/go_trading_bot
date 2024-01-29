@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	// "net/http"
 
+	"v1/pkg/analytics"
 	chart "v1/pkg/charts"
+	"v1/pkg/execute"
 	"v1/pkg/strategey"
 	// "v1/pkg/analytics/metrics"
 	// "v1/pkg/db/models"
@@ -49,71 +52,68 @@ import (
 //	}
 func main() {
 
-	strategey.RunBacktestDonchain()
-	// strategyName := "RSI"
-	// assetName := "SEIUSDT"
-	// duration := "30m"
-	// tableName := strategyName + "_" + assetName + "_" + duration
+	strategyName := "EMA"
+	assetName := "AVAXUSDT"
+	duration := "1h"
+	tableName := strategyName + "_" + assetName + "_" + duration
 
-	// _, err := execute.CreateDBTable(tableName)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// // df, _ := strategey.GetCandleData(assetName, duration)
-
-	// // profit, period := df.OptimizeProfitDonchain()
-
-	// // if profit > 0 {
-
-	// // 	df.Signal = df.DonchainStrategy(period)
-
-	// // }
-
-	// // winrate, period := df.OptimizeWinRateDonchain()
-
-	// // if winrate > 0 {
-
-	// // 	df.Signal = df.DonchainStrategy(period)
-
-	// // }
+	_, err := execute.CreateDBTable(tableName)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// df, _ := strategey.GetCandleData(assetName, duration)
 
-	// profit, bestPeriod, bestBuyThread, bestSellThread := df.OptimizeDonchainProfit()
+	// profit, period := df.OptimizeProfitDonchain()
 
 	// if profit > 0 {
 
-	// 	df.Signal = df.RsiStrategy(bestPeriod, bestBuyThread, bestSellThread)
+	// 	df.Signal = df.DonchainStrategy(period)
 
 	// }
 
-	// l, lr := analytics.FinalBalance(df.Signal)
-	// d := analytics.MaxDrawdown(df.Signal)
-	// dr := d * 100
+	// winrate, period := df.OptimizeWinRateDonchain()
 
-	// ml, mt := analytics.MaxLossTrade(df.Signal)
+	// if winrate > 0 {
 
-	// // fmt.Println(df.Signal)
+	// 	df.Signal = df.DonchainStrategy(period)
 
-	// fmt.Println(tableName)
-	// fmt.Println("初期残高", analytics.AccountBalance)
-	// fmt.Println("最終残高", l, "比率", lr)
-	// fmt.Println("勝率", analytics.WinRate(df.Signal)*100, "%")
-	// fmt.Println("総利益", analytics.Profit(df.Signal))
-	// fmt.Println("総損失", analytics.Loss(df.Signal))
-	// fmt.Println("プロフィットファクター", analytics.ProfitFactor(df.Signal))
-	// fmt.Println("最大ドローダウン", dr, "% ")
-	// fmt.Println("純利益", analytics.NetProfit(df.Signal))
-	// fmt.Println("シャープレシオ", analytics.SharpeRatio(df.Signal, 0.02))
-	// fmt.Println("トータルトレード回数", analytics.TotalTrades(df.Signal))
-	// fmt.Println("勝ちトレード回数", analytics.WinningTrades(df.Signal))
-	// fmt.Println("負けトレード回数", analytics.LosingTrades(df.Signal))
-	// fmt.Println("平均利益", analytics.AveregeProfit(df.Signal))
-	// fmt.Println("平均損失", analytics.AveregeLoss(df.Signal))
-	// fmt.Println("ペイオフレシオ", analytics.PayOffRatio(df.Signal))
-	// fmt.Println("1トレードの最大損失と日時", ml, mt)
-	// // fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(df.Signal))
+	// }
+
+	df, _ := strategey.GetCandleData(assetName, duration)
+
+	profit, bestPeriod1, bestPeriod2 := df.OptimizeEma()
+
+	if profit > 0 {
+
+		df.Signal = df.EmaStrategy(bestPeriod1, bestPeriod2, accountBlance)
+
+	}
+
+	l, lr := analytics.FinalBalance(df.Signal)
+	d := analytics.MaxDrawdown(df.Signal)
+	dr := d * 100
+
+	fmt.Println(df.Signal)
+	fmt.Println("最高利益", profit, "最適なピリオド1", bestPeriod1, "最適なピリオド2", bestPeriod2)
+
+	fmt.Println(tableName)
+	fmt.Println("初期残高", analytics.AccountBalance)
+	fmt.Println("最終残高", l, "比率", lr)
+	fmt.Println("勝率", analytics.WinRate(df.Signal))
+	fmt.Println("総利益", analytics.Profit(df.Signal))
+	fmt.Println("総損失", analytics.Loss(df.Signal))
+	fmt.Println("プロフィットファクター", analytics.ProfitFactor(df.Signal))
+	fmt.Println("最大ドローダウン", dr, "% ")
+	fmt.Println("純利益", analytics.NetProfit(df.Signal))
+	fmt.Println("シャープレシオ", analytics.SharpeRatio(df.Signal, 0.06))
+	fmt.Println("トータルトレード回数", analytics.TotalTrades(df.Signal))
+	fmt.Println("勝ちトレード回数", analytics.WinningTrades(df.Signal))
+	fmt.Println("負けトレード回数", analytics.LosingTrades(df.Signal))
+	fmt.Println("平均利益", analytics.AveregeProfit(df.Signal))
+	fmt.Println("平均損失", analytics.AveregeLoss(df.Signal))
+	fmt.Println("ペイオフレシオ", analytics.PayOffRatio(df.Signal))
+	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(df.Signal))
 
 	// s := execute.NewSignalEvents()
 

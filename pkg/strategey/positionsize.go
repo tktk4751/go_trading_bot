@@ -1,79 +1,112 @@
 package strategey
 
 import (
+	"math"
 	"v1/pkg/execute"
 )
 
-var AccountBalance float64 = 1000.000
+// var AccountBalance float64 = 1000.000
 
 func Profit(s *execute.SignalEvents) float64 {
-	var profit float64 = 0.0
-	var buyPrice, sellPrice float64
-	var buySize, sellSize float64
-
-	for _, signal := range s.Signals {
-		if signal.Side == "BUY" {
-			buyPrice = signal.Price
-			buySize = signal.Size
-		} else if signal.Side == "SELL" {
-			sellPrice = signal.Price
-			sellSize = signal.Size
-			profit += (sellPrice - buyPrice) * min(buySize, sellSize)
+	if s == nil {
+		return 0.0
+	}
+	total := 0.0
+	beforeSell := 0.0
+	isHolding := false
+	for i, signalEvent := range s.Signals {
+		if i == 0 && signalEvent.Side == "SELL" {
+			continue
+		}
+		if signalEvent.Side == "BUY" {
+			total -= signalEvent.Price * signalEvent.Size
+			isHolding = true
+		}
+		if signalEvent.Side == "SELL" {
+			total += signalEvent.Price * signalEvent.Size
+			isHolding = false
+			beforeSell = total
 		}
 	}
-
-	return profit
+	if isHolding {
+		return beforeSell
+	}
+	return total
 }
 
-func TotalProfit(s *execute.SignalEvents) float64 {
-	var totalProfit float64 = 0.0
-	var buyPrice, sellPrice float64
-	var buySize, sellSize float64
+func Loss(s *execute.SignalEvents) float64 {
 
+	if s == nil {
+		return 0.0
+	}
+	var loss float64 = 0.0
+	var buyPrice float64
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
 	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" {
+			return 0.0
+		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-			buySize = signal.Size
-		} else if signal.Side == "SELL" {
-			sellPrice = signal.Price
-			sellSize = signal.Size
-			profit := (sellPrice - buyPrice) * min(buySize, sellSize) / buyPrice * AccountBalance
-			if profit > 0 {
-				totalProfit += profit
+		} else if signal.Side == "SELL" && buyPrice != 0 {
+			if signal.Price < buyPrice {
+				loss += (buyPrice - signal.Price) * signal.Size
 			}
+			buyPrice = 0 // Reset buy price after a sell
 		}
 	}
 
-	return totalProfit
+	return loss
 }
 
-func TotalLoss(s *execute.SignalEvents) float64 {
-	var totalLoss float64 = 0.0
-	var buyPrice, sellPrice float64
-	var buySize, sellSize float64
+// // TotalProfit returns the total profit of a series of signal events
+// func TotalProfit(s *execute.SignalEvents) float64 {
+// 	var totalProfit float64 = 0.0
+// 	for _, signal := range s.Signals {
+// 		if signal.Side == "SELL" {
+// 			totalProfit += Profit(s)
+// 		}
+// 	}
+// 	return totalProfit
+// }
 
-	for _, signal := range s.Signals {
-		if signal.Side == "BUY" {
-			buyPrice = signal.Price
-			buySize = signal.Size
-		} else if signal.Side == "SELL" {
-			sellPrice = signal.Price
-			sellSize = signal.Size
-			profit := (sellPrice - buyPrice) * min(buySize, sellSize) / buyPrice * AccountBalance
-			if profit < 0 {
-				totalLoss -= profit
-			}
-		}
-	}
-
-	return totalLoss
-}
+// // TotalLoss returns the total loss of a series of signal events
+// func TotalLoss(s *execute.SignalEvents) float64 {
+// 	var totalLoss float64 = 0.0
+// 	for _, signal := range s.Signals {
+// 		if signal.Side == "BUY" {
+// 			totalLoss -= Profit(s)
+// 		}
+// 	}
+// 	return totalLoss
+// }
 
 func NetProfit(s *execute.SignalEvents) float64 {
-	totalProfit := TotalProfit(s)
-	totalLoss := TotalLoss(s)
+	if s == nil {
+		return 0.0
+	}
+	totalProfit := Profit(s)
+	totalLoss := Loss(s)
 
 	return totalProfit - totalLoss
+}
+
+func ProfitFactor(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	totalProfit := Profit(s)
+	totalLoss := Loss(s)
+
+	if totalLoss == 0 {
+		return math.Inf(1)
+	}
+
+	return totalProfit / totalLoss
 }
 
 // func RiskSizeCalculator(s *execute.SignalEvents) float64 {
