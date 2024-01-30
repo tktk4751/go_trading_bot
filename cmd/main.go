@@ -2,10 +2,6 @@ package main
 
 import (
 	"fmt"
-
-	// "net/http"
-
-	chart "v1/pkg/charts"
 	"v1/pkg/strategey"
 	// "v1/pkg/analytics/metrics"
 	// "v1/pkg/db/models"
@@ -49,18 +45,24 @@ import (
 //	}
 func main() {
 
-	strategey.RunBacktestDonchain()
-	// strategyName := "RSI"
-	// assetName := "SEIUSDT"
-	// duration := "30m"
+	// account := trader.NewAccount(1000)
+
+	strategey.RunBacktestRsi()
+	// strategyName := "B&H"
+	// assetName := config.AssetName
+	// duration := config.Dration
+
+	// fmt.Println(assetName)
 	// tableName := strategyName + "_" + assetName + "_" + duration
 
-	// _, err := execute.CreateDBTable(tableName)
+	// _, err = execute.CreateDBTable(tableName)
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
 
-	// // df, _ := strategey.GetCandleData(assetName, duration)
+	// df, _ := strategey.GetCandleData(assetName, duration)
+
+	// df.BuyAndHoldingStrategy(account)
 
 	// // profit, period := df.OptimizeProfitDonchain()
 
@@ -127,8 +129,8 @@ func main() {
 	defer fmt.Println("メイン関数終了")
 
 	// チャート呼び出し
-	var c chart.CandleStickChart
-	c.CandleStickChart()
+	// var c chart.CandleStickChart
+	// c.CandleStickChart()
 
 	// query.GetCloseData("BTCUSDT", "4h")
 

@@ -192,7 +192,7 @@ func GetDateData(assetName string, duration string) ([]data.Date, error) {
 	return date, nil
 }
 
-func GetCloseData(assetName string, duration string) ([]data.Close, error) {
+func GetCloseData(assetName string, duration string) ([]float64, error) {
 	db, err := sql.Open("sqlite3", "db/kline.db")
 	if err != nil {
 		log.Fatal(err)
@@ -209,10 +209,10 @@ func GetCloseData(assetName string, duration string) ([]data.Close, error) {
 	}
 	defer rows.Close()
 
-	var close []data.Close
+	var close []float64
 	for rows.Next() {
-		var k data.Close
-		err := rows.Scan(&k.Close)
+		var k float64
+		err := rows.Scan(&k)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -222,7 +222,7 @@ func GetCloseData(assetName string, duration string) ([]data.Close, error) {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(close)
+	// fmt.Println(close)
 	return close, nil
 }
 

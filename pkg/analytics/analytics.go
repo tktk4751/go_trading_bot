@@ -4,7 +4,7 @@ import (
 	"v1/pkg/execute"
 )
 
-var AccountBalance float64 = 1000.000
+var initialBalance float64 = 1000.000
 
 var s *execute.SignalEvents
 

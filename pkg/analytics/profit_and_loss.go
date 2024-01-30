@@ -3,7 +3,10 @@ package analytics
 import (
 	"math"
 	"time"
+
+	dbquery "v1/pkg/data/query"
 	"v1/pkg/execute"
+	"v1/pkg/trader"
 )
 
 // 課題 エグジットフラグメントを実装して､空売りにも対応するProfit関数を作ろう
@@ -35,7 +38,8 @@ import (
 // 	return total
 // }
 
-func Profit(s *execute.SignalEvents) float64 {
+// これは純利益を出力する関数
+func Profi2(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
@@ -66,40 +70,28 @@ func Profit(s *execute.SignalEvents) float64 {
 	return profit
 }
 
-func Profi2(s *execute.SignalEvents) float64 {
-
+func Profit(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
-	profit := 0.0
-	buyPrice := 0.0
-	beforeSell := 0.0
-	isHolding := false
+	var profit float64 = 0.0
+	var buyPrice float64
 
 	if s.Signals == nil || len(s.Signals) == 0 {
 		return 0.0
 	}
-	for i, signal := range s.Signals {
+	for _, signal := range s.Signals {
 
-		if i == 0 && signal.Side == "SELL" {
-			continue
-		}
 		if signal.Side != "BUY" && signal.Side != "SELL" {
 			return 0.0
 		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-			isHolding = true
-		} else if signal.Side == "SELL" && buyPrice != 0.0 {
+		} else if signal.Side == "SELL" && buyPrice != 0 {
 			if signal.Price > buyPrice {
 				profit += (signal.Price - buyPrice) * signal.Size
-				isHolding = false
-				beforeSell = profit
 			}
 			buyPrice = 0 // Reset buy price after a sell
-		}
-		if isHolding {
-			return beforeSell
 		}
 	}
 
@@ -228,4 +220,21 @@ func MaxProfitTrade(s *execute.SignalEvents) (float64, time.Time) {
 		}
 	}
 	return maxProfitTrade, profitTime
+}
+
+func HoldingReturn(s *execute.SignalEvents) (float64, float64) {
+
+	acount := trader.NewAccount(initialBalance)
+
+	assetName := s.Signals[0].AssetName
+	duration := s.Signals[0].Duration
+	close, _ := dbquery.GetCloseData(assetName, duration)
+	size := acount.Balance
+
+	buyPrice := close[len(close)-1]
+
+	holdingReturn := (close[0] / buyPrice) * size
+	holdingReturnRatio := holdingReturn / size
+
+	return holdingReturn, holdingReturnRatio
 }

@@ -1,62 +1,57 @@
 package analytics
 
-import (
-	"math"
-	"v1/pkg/execute"
-)
-
 type Bar struct {
 	High float64
 	Low  float64
 }
 
 // MaxDrawdown関数は、与えられた取引シグナルの配列から、最大ドローダウンを計算して返す関数です。
-// 引数は、execute.SignalEvents型のポインタです。
-// 返り値は、float64型です。
-func MaxDrawdown(signalEvents *execute.SignalEvents) float64 {
-	// 初期アカウントバランスを設定します。この値はテストケースに合わせて変更できます。
-	if s == nil {
-		return 0.0
-	}
-	// 累積利益を保持する変数を宣言します。初期値は0です。
-	var cumulativeProfit float64 = 0.0
+// // 引数は、execute.SignalEvents型のポインタです。
+// // 返り値は、float64型です。
+// func MaxDrawdown(signalEvents *execute.SignalEvents) float64 {
+// 	// 初期アカウントバランスを設定します。この値はテストケースに合わせて変更できます。
+// 	if s == nil {
+// 		return 0.0
+// 	}
+// 	// 累積利益を保持する変数を宣言します。初期値は0です。
+// 	var cumulativeProfit float64 = 0.0
 
-	// 最高値を保持する変数を宣言します。初期値は0です。
-	var maxProfit float64 = 0.0
+// 	// 最高値を保持する変数を宣言します。初期値は0です。
+// 	var maxProfit float64 = 0.0
 
-	// 最大ドローダウンを保持する変数を宣言します。初期値は0です。
-	var maxDrawdown float64 = 0.0
+// 	// 最大ドローダウンを保持する変数を宣言します。初期値は0です。
+// 	var maxDrawdown float64 = 0.0
 
-	// 取引シグナルの配列をループして、累積利益と最大ドローダウンを更新します。
-	for _, signal := range signalEvents.Signals {
-		// 取引シグナルの種類に応じて、累積利益を計算します。
-		// 買いシグナルの場合、価格×数量分だけ累積利益を減らします。
-		// 売りシグナルの場合、価格×数量分だけ累積利益を増やします。
-		if signal.Side == "BUY" {
-			cumulativeProfit -= signal.Price * signal.Size
-		} else if signal.Side == "SELL" {
-			cumulativeProfit += signal.Price * signal.Size
-		}
+// 	// 取引シグナルの配列をループして、累積利益と最大ドローダウンを更新します。
+// 	for _, signal := range signalEvents.Signals {
+// 		// 取引シグナルの種類に応じて、累積利益を計算します。
+// 		// 買いシグナルの場合、価格×数量分だけ累積利益を減らします。
+// 		// 売りシグナルの場合、価格×数量分だけ累積利益を増やします。
+// 		if signal.Side == "BUY" {
+// 			cumulativeProfit -= signal.Price * signal.Size
+// 		} else if signal.Side == "SELL" {
+// 			cumulativeProfit += signal.Price * signal.Size
+// 		}
 
-		// 累積利益が最高値を更新した場合、最高値を累積利益と同じにします。
-		if cumulativeProfit > maxProfit {
-			maxProfit = cumulativeProfit
-		}
+// 		// 累積利益が最高値を更新した場合、最高値を累積利益と同じにします。
+// 		if cumulativeProfit > maxProfit {
+// 			maxProfit = cumulativeProfit
+// 		}
 
-		// 累積利益が最高値から減少した場合、ドローダウンを計算します。
-		// ドローダウンは、最高値からの減少額を初期アカウントバランスで割ったものです。
-		// ドローダウンが最大ドローダウンを更新した場合、最大ドローダウンをドローダウンと同じにします。
-		if cumulativeProfit < maxProfit {
-			drawdown := (maxProfit - cumulativeProfit) / AccountBalance
-			if drawdown > maxDrawdown {
-				maxDrawdown = drawdown
-			}
-		}
-	}
+// 		// 累積利益が最高値から減少した場合、ドローダウンを計算します。
+// 		// ドローダウンは、最高値からの減少額を初期アカウントバランスで割ったものです。
+// 		// ドローダウンが最大ドローダウンを更新した場合、最大ドローダウンをドローダウンと同じにします。
+// 		if cumulativeProfit < maxProfit {
+// 			drawdown := (maxProfit - cumulativeProfit) / AccountBalance
+// 			if drawdown > maxDrawdown {
+// 				maxDrawdown = drawdown
+// 			}
+// 		}
+// 	}
 
-	// 最大ドローダウンを小数点第二位まで四捨五入して返します。
-	return math.Round(maxDrawdown) / 100
-}
+// 	// 最大ドローダウンを小数点第二位まで四捨五入して返します。
+// 	return math.Round(maxDrawdown) / 100
+// }
 
 // func MaxDrawdown(s *execute.SignalEvents, bars []Bar) float64 {
 // 	var maxDrawdown float64 = 0.0

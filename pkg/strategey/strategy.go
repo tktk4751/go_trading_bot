@@ -9,9 +9,11 @@ import (
 	"v1/pkg/data"
 	dbquery "v1/pkg/data/query"
 	"v1/pkg/execute"
+	"v1/pkg/trader"
 )
 
 var initialBalance float64 = 1000.00
+var riskSize float64 = 0.9
 
 type DataFrameCandle struct {
 	AssetName string
@@ -144,13 +146,15 @@ func Result(s *execute.SignalEvents) {
 		return
 	}
 
+	account := trader.NewAccount(1000)
+
 	l, lr := analytics.FinalBalance(s)
-	d := analytics.MaxDrawdown(s)
-	dr := d * 100
+	// d := analytics.MaxDrawdown(s)
+	// dr := d * 100
 
 	ml, mt := analytics.MaxLossTrade(s)
 
-	// fmt.Println(s)
+	profit, multiple := BuyAndHoldingStrategy(account)
 
 	n := s.Signals[0]
 
@@ -163,7 +167,7 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("総利益", analytics.Profit(s))
 	fmt.Println("総損失", analytics.Loss(s))
 	fmt.Println("プロフィットファクター", analytics.ProfitFactor(s))
-	fmt.Println("最大ドローダウン", dr, "% ")
+	// fmt.Println("最大ドローダウン", dr, "% ")
 	fmt.Println("純利益", analytics.NetProfit(s))
 	fmt.Println("シャープレシオ", analytics.SharpeRatio(s, 0.02))
 	fmt.Println("トータルトレード回数", analytics.TotalTrades(s))
@@ -172,6 +176,7 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("平均利益", analytics.AveregeProfit(s))
 	fmt.Println("平均損失", analytics.AveregeLoss(s))
 	fmt.Println("ペイオフレシオ", analytics.PayOffRatio(s))
+	fmt.Printf("バイアンドホールドでの利益: %f,  倍率: %f\n", profit, multiple)
 	fmt.Println("1トレードの最大損失と日時", ml, mt)
 	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
 
