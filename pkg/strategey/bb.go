@@ -36,11 +36,14 @@ func (df *DataFrameCandle) BbStrategy(n int, k float64, account *trader.Account)
 		}
 		if bbDown[i-1] > df.Candles[i-1].Close && bbDown[i] <= df.Candles[i].Close && !isBuyHolding {
 			buySize = account.TradeSize(0.9) / df.Candles[i].Close
-			signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
+			accountBalance := account.GetBalance()
+			signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+
 			isBuyHolding = true
 		}
 		if bbUp[i-1] < df.Candles[i-1].Close && bbUp[i] >= df.Candles[i].Close && isBuyHolding {
-			signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
+			accountBalance := account.GetBalance()
+			signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 			isBuyHolding = false
 		}
 	}

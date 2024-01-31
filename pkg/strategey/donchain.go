@@ -39,18 +39,20 @@ func (df *DataFrameCandle) DonchainStrategy(period int, account *trader.Account)
 		if i < period {
 			continue
 		}
+
 		if close[i] > donchain.High[i-1] && !isHolding {
 
 			buySize = account.TradeSize(riskSize) / df.Candles[i].Close
-
+			accountBalance := account.GetBalance()
 			if account.Buy(df.Candles[i].Close, buySize) {
-				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, false)
+				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isHolding = true
 			}
 		}
 		if close[i] < donchain.Low[i-1] && isHolding {
+			accountBalance := account.GetBalance()
 			if account.Sell(df.Candles[i].Close) {
-				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, false)
+				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isHolding = false
 				buySize = 0.0
 				account.PositionSize = buySize
@@ -308,7 +310,6 @@ func RunBacktestDonchain() {
 	if performancePayOffRatio > 0 {
 
 		df.Signal = df.DonchainStrategy(bestPayOffRatioPeriod, account)
-		fmt.Println("🔺ペイオフレシオ最適化")
 		Result(df.Signal)
 
 	}

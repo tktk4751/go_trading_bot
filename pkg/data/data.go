@@ -45,14 +45,6 @@ type Open struct {
 	Open float64
 }
 
-type High struct {
-	High float64
-}
-
-type Low struct {
-	Low float64
-}
-
 type Date struct {
 	Date time.Time
 }

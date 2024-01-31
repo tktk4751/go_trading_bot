@@ -149,14 +149,16 @@ func Result(s *execute.SignalEvents) {
 	account := trader.NewAccount(1000)
 
 	l, lr := analytics.FinalBalance(s)
-	// d := analytics.MaxDrawdown(s)
-	// dr := d * 100
 
 	ml, mt := analytics.MaxLossTrade(s)
 
 	profit, multiple := BuyAndHoldingStrategy(account)
 
 	n := s.Signals[0]
+
+	dd := analytics.MaxDrawdownRatio(s)
+
+	// d, _ := analytics.MaxDrawdown(s)
 
 	name := n.StrategyName + "_" + n.AssetName + "_" + n.Duration
 
@@ -167,7 +169,8 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("総利益", analytics.Profit(s))
 	fmt.Println("総損失", analytics.Loss(s))
 	fmt.Println("プロフィットファクター", analytics.ProfitFactor(s))
-	// fmt.Println("最大ドローダウン", dr, "% ")
+	fmt.Println("最大ドローダウン金額", analytics.MaxDrawdownUSD(s), "USD ")
+	fmt.Println("最大ドローダウン", dd*100, "% ")
 	fmt.Println("純利益", analytics.NetProfit(s))
 	fmt.Println("シャープレシオ", analytics.SharpeRatio(s, 0.02))
 	fmt.Println("トータルトレード回数", analytics.TotalTrades(s))
@@ -176,9 +179,12 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("平均利益", analytics.AveregeProfit(s))
 	fmt.Println("平均損失", analytics.AveregeLoss(s))
 	fmt.Println("ペイオフレシオ", analytics.PayOffRatio(s))
-	fmt.Printf("バイアンドホールドでの利益: %f,  倍率: %f\n", profit, multiple)
+	fmt.Println("ゲインペインレシオ", analytics.GainPainRatio(s))
+	fmt.Println("勝ちトレードの平均バー数", analytics.AverageWinningHoldingBars(s))
+	fmt.Println("負けトレードの平均バー数", analytics.AverageLosingHoldingBars(s))
+	fmt.Printf("バイアンドホールドした時の利益: %f,  倍率: %f\n", profit, multiple)
 	fmt.Println("1トレードの最大損失と日時", ml, mt)
 	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
 
-	// fmt.Println(s)
+	fmt.Println(s)
 }

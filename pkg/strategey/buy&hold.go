@@ -1,7 +1,6 @@
 package strategey
 
 import (
-	"fmt"
 	"log"
 	"v1/pkg/config"
 	dbquery "v1/pkg/data/query"
@@ -22,8 +21,6 @@ func BuyAndHoldingStrategy(account *trader.Account) (profit float64, multiple fl
 		log.Fatalf("error: %v", err)
 	}
 
-	fmt.Println(btcfg.AssetName)
-
 	assetName := btcfg.AssetName
 	duration := btcfg.Dration
 
@@ -42,9 +39,6 @@ func BuyAndHoldingStrategy(account *trader.Account) (profit float64, multiple fl
 
 	profit = account.Balance - initialBalance
 	multiple = account.Balance / initialBalance
-
-	fmt.Printf("バイアンドホールドでの利益: %f,  倍率: %f\n", profit, multiple)
-
 	return profit, multiple
 }
 

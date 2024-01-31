@@ -49,6 +49,8 @@ func main() {
 
 	// account := trader.NewAccount(1000)
 
+	// a := position.Risk_size_calculator(0.4, 5.98, 0.093)
+	// fmt.Println(a)
 	strategey.RunBacktestRsi()
 	// strategyName := "B&H"
 	// assetName := config.AssetName

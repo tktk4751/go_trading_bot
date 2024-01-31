@@ -238,3 +238,17 @@ func HoldingReturn(s *execute.SignalEvents) (float64, float64) {
 
 	return holdingReturn, holdingReturnRatio
 }
+
+func GainPainRatio(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+
+	gain := AveregeProfit(s)
+	pain := MaxDrawdownUSD(s)
+
+	gainPainRatio := gain / pain
+
+	return gainPainRatio
+
+}

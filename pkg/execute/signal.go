@@ -14,13 +14,14 @@ import (
 var db *sql.DB
 
 type SignalEvent struct {
-	Time         time.Time `json:"time"`
-	StrategyName string    `json:"strategy_name"`
-	AssetName    string    `json:"product_code"`
-	Duration     string    `json:"duration"`
-	Side         string    `json:"side"`
-	Price        float64   `json:"price"`
-	Size         float64   `json:"size"`
+	Time           time.Time `json:"time"`
+	StrategyName   string    `json:"strategy_name"`
+	AssetName      string    `json:"product_code"`
+	Duration       string    `json:"duration"`
+	Side           string    `json:"side"`
+	Price          float64   `json:"price"`
+	Size           float64   `json:"size"`
+	AccountBalance float64
 }
 
 func (s *SignalEvent) GetTableName() string {
@@ -202,21 +203,21 @@ func (s *SignalEvents) CanShort(t time.Time) bool {
 // 	return winCount / totalCount
 // }
 
-func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
+func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) bool {
 
 	if !s.CanLong(date) {
 		return false
 	}
 
 	signalEvent := SignalEvent{
-		Time:         date,
-		StrategyName: strategyName,
-		AssetName:    assetName,
-
-		Duration: duration,
-		Side:     "BUY",
-		Price:    price,
-		Size:     size,
+		Time:           date,
+		StrategyName:   strategyName,
+		AssetName:      assetName,
+		Duration:       duration,
+		Side:           "BUY",
+		Price:          price,
+		Size:           size,
+		AccountBalance: accountBalance,
 	}
 	// if save {
 	// 	signalEvent.Save()
@@ -230,20 +231,21 @@ func (s *SignalEvents) Buy(strategyName string, assetName string, duration strin
 	return true
 }
 
-func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, size float64, save bool) bool {
+func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) bool {
 
 	if !s.CanShort(date) {
 
 		return false
 	}
 	signalEvent := SignalEvent{
-		Time:         date,
-		StrategyName: strategyName,
-		AssetName:    assetName,
-		Duration:     duration,
-		Side:         "SELL",
-		Price:        price,
-		Size:         size,
+		Time:           date,
+		StrategyName:   strategyName,
+		AssetName:      assetName,
+		Duration:       duration,
+		Side:           "SELL",
+		Price:          price,
+		Size:           size,
+		AccountBalance: accountBalance,
 	}
 
 	// if save {

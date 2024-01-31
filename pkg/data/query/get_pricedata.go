@@ -260,7 +260,7 @@ func GetOpenData(assetName string, duration string) ([]data.Open, error) {
 	return open, nil
 }
 
-func GetHighData(assetName string, duration string) ([]data.High, error) {
+func GetHighData(assetName string, duration string) ([]float64, error) {
 
 	db, err := sql.Open("sqlite3", "db/kline.db")
 	if err != nil {
@@ -278,10 +278,10 @@ func GetHighData(assetName string, duration string) ([]data.High, error) {
 	}
 	defer rows.Close()
 
-	var high []data.High
+	var high []float64
 	for rows.Next() {
-		var k data.High
-		err := rows.Scan(&k.High)
+		var k float64
+		err := rows.Scan(&k)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -294,7 +294,7 @@ func GetHighData(assetName string, duration string) ([]data.High, error) {
 	return high, nil
 }
 
-func GetLowData(assetName string, duration string) ([]data.Low, error) {
+func GetLowData(assetName string, duration string) ([]float64, error) {
 
 	db, err := sql.Open("sqlite3", "db/kline.db")
 	if err != nil {
@@ -312,10 +312,10 @@ func GetLowData(assetName string, duration string) ([]data.Low, error) {
 	}
 	defer rows.Close()
 
-	var low []data.Low
+	var low []float64
 	for rows.Next() {
-		var k data.Low
-		err := rows.Scan(&k.Low)
+		var k float64
+		err := rows.Scan(&k)
 		if err != nil {
 			log.Fatal(err)
 		}

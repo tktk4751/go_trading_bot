@@ -1,5 +1,9 @@
 package position
 
+import (
+	"fmt"
+)
+
 // var avax = "pkg/data/spot/monthly/klines/AVAXUSDT/4h"
 // var btc = "pkg/data/spot/monthly/klines/BTCUSDT/4h"
 // var uni = "pkg/data/spot/monthly/klines/UNIUSDT/4h"
@@ -26,23 +30,25 @@ type SL struct {
 	Side   string
 }
 
-// func (p *PositionSizeCalculator) Risk_size_calculator(w, r, d float64) float64 {
+func Risk_size_calculator(w, r, dd float64) float64 {
 
-// 	// W = winrate r = risk_reward_ratio d = max_drawdown
-// 	// f := (w*(r+1)-1)/r - (d*(d*2+1)-1)/r - 0.002
-// 	f := (((w*(r+w+w)-(1+d))/(r-w*d) - 0.002) * w) / 1.618
+	d := dd * 2.2
 
-// 	if f < 0 || r <= 1.05 || d > 0.45 {
-// 		fmt.Print("トレード禁止")
-// 	}
-// 	return f
+	// W = winrate r = risk_reward_ratio d = max_drawdown
+	// f := (w*(r+1)-1)/r - (d*(d*2+1)-1)/r - 0.002
+	f := (((w*(r+w+w)-(1+d))/(r-w*d) - 0.002) * w) / 2
 
-// }
+	if f < 0 || r <= 1.05 || d > 0.45 {
+		fmt.Print("トレード禁止")
+	}
+	return f
+
+}
 
 // func (p *PositionSizeCalculator) Stop_loss_price_calc(s *execute.SignalEvents) float64 {
 
 // 	h := s.Signals.
-// 	var atr = talib.Atr()
+// 	var atr []float64 = talib.Atr()
 // 	var sl float64
 // 	for _, v := range close {
 
