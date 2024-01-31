@@ -218,13 +218,13 @@ func (s *SignalEvents) Buy(strategyName string, assetName string, duration strin
 		Price:    price,
 		Size:     size,
 	}
-	if save {
-		signalEvent.Save()
+	// if save {
+	// 	signalEvent.Save()
 
-	} else {
+	// } else {
 
-		return false
-	}
+	// 	return false
+	// }
 	s.Signals = append(s.Signals, signalEvent)
 
 	return true
@@ -246,10 +246,10 @@ func (s *SignalEvents) Sell(strategyName string, assetName string, duration stri
 		Size:         size,
 	}
 
-	if save {
-		signalEvent.Save()
+	// if save {
+	// 	signalEvent.Save()
 
-	}
+	// }
 
 	s.Signals = append(s.Signals, signalEvent)
 	return true

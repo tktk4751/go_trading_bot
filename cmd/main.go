@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 	"v1/pkg/strategey"
 	// "v1/pkg/analytics/metrics"
 	// "v1/pkg/db/models"
@@ -44,6 +45,7 @@ import (
 //		})
 //	}
 func main() {
+	start := time.Now()
 
 	// account := trader.NewAccount(1000)
 
@@ -134,6 +136,7 @@ func main() {
 
 	// query.GetCloseData("BTCUSDT", "4h")
 
+	//DBにデータを追加するための関数
 	// var assets_names []string = []string{"RUNEUSDT", "BTCUSDT", "AAVEUSDT", "ORDIUSDT", "SANUSDT", "LTCUSDT", "OKBUSDT", "ASTRUSDT", "MNTUSDT", "FTMUSDT", "SNXUSDT", "DYDXUSDT", "BONKUSDT", "LUNAUSDT", "MAGICUSDT", "XLMUSDT", "DOGEUSDT", "TRSUSDT", "LINKUSDT", "TONUSDT", "ISPUSDT", "BONKUSDT", "GMXUSDT", "INJUSDT", "ETHUSDT", "SOLUSDT", "AVAXUSDT", "MATICUSDT", "ATOMUSDT", "UNIUSDT", "ARBUSDT", "OPUSDT", "PEPEUSDT", "SEIUSDT", "SUIUSDT", "TIAUSDT", "WLDUSDT", "XRPUSDT", "NEARUSDT", "DOTUSDT", "APTUSDT", "XMRUSDT", "LDOUSDT", "FILUSDT", "KASUSDT", "STXUSDT", "RNDRUSDT", "GRTUSDT"}
 
 	// var durations []string = []string{"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h"}
@@ -146,7 +149,7 @@ func main() {
 	// 	log.Fatalf("Error loading OHLCV data: %v", err)
 	// }
 
-	// // data.SaveAssetDatasCSV(asset_data)
+	// // // data.SaveAssetDatasCSV(asset_data)
 
 	// // DBに接続する関数を呼び出し
 	// db, err := data.ConnectDB("./db/kline.db")
@@ -160,6 +163,7 @@ func main() {
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
+	//ここまで
 
 	// for key, paths := range groupedPaths {
 
@@ -176,6 +180,13 @@ func main() {
 	// fs := http.FileServer(http.Dir("pkg/charts/html"))
 	// log.Println("running server at http://localhost:8089")
 	// log.Fatal(http.ListenAndServe("localhost:8089", logRequest(fs)))
+	end := time.Now()
+
+	// 処理時間を計算
+	duration := end.Sub(start)
+
+	// 処理時間を表示
+	fmt.Printf("処理時間: %v\n", duration)
 
 }
 

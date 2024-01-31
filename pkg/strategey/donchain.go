@@ -3,6 +3,8 @@ package strategey
 import (
 	"fmt"
 	"log"
+	"math"
+	"sync"
 	"v1/pkg/analytics"
 	"v1/pkg/config"
 	"v1/pkg/execute"
@@ -25,6 +27,7 @@ func (df *DataFrameCandle) DonchainStrategy(period int, account *trader.Account)
 	signalEvents := execute.NewSignalEvents()
 
 	donchain := indicators.Donchain(df.Highs(), df.Low(), period)
+	// atr := talib.Atr(df.Highs(), df.Low(), df.Closes(), 21)
 
 	close := df.Closes()
 
@@ -37,15 +40,17 @@ func (df *DataFrameCandle) DonchainStrategy(period int, account *trader.Account)
 			continue
 		}
 		if close[i] > donchain.High[i-1] && !isHolding {
+
 			buySize = account.TradeSize(riskSize) / df.Candles[i].Close
+
 			if account.Buy(df.Candles[i].Close, buySize) {
-				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
+				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, false)
 				isHolding = true
 			}
 		}
 		if close[i] < donchain.Low[i-1] && isHolding {
 			if account.Sell(df.Candles[i].Close) {
-				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
+				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, false)
 				isHolding = false
 				buySize = 0.0
 				account.PositionSize = buySize
@@ -69,9 +74,6 @@ func (df *DataFrameCandle) OptimizeDonchainProfit() (performance float64, bestPe
 
 	for period := 5; period < 350; period++ {
 
-		account.Balance = initialBalance
-		account.PositionSize = 0.0
-
 		signalEvents := df.DonchainStrategy(period, account)
 		if signalEvents == nil {
 			continue
@@ -90,15 +92,42 @@ func (df *DataFrameCandle) OptimizeDonchainProfit() (performance float64, bestPe
 	return performance, bestPeriod
 }
 
+func (df *DataFrameCandle) OptimizeDonchainLoss() (performance float64, bestPeriod int) {
+	if df == nil {
+		return 0.0, 0
+	}
+
+	account := trader.NewAccount(1000)
+
+	bestPeriod = 40
+	performance = math.MaxFloat64
+
+	for period := 5; period < 350; period++ {
+
+		signalEvents := df.DonchainStrategy(period, account)
+		if signalEvents == nil {
+			continue
+		}
+		loss := analytics.Loss(signalEvents)
+		if performance > loss {
+			performance = loss
+			bestPeriod = period
+
+		}
+
+	}
+
+	fmt.Println("最高利益", performance, "最適なピリオド", bestPeriod)
+
+	return performance, bestPeriod
+}
+
 func (df *DataFrameCandle) OptimizeDonchainWinRate() (performance float64, bestPeriod int) {
 	bestPeriod = 40
 
 	account := trader.NewAccount(1000)
 
 	for period := 10; period < 333; period++ {
-
-		account.Balance = initialBalance
-		account.PositionSize = 0.0
 
 		signalEvents := df.DonchainStrategy(period, account)
 		if signalEvents == nil {
@@ -123,9 +152,6 @@ func (df *DataFrameCandle) OptimizeDonchainProfitFactor() (performance float64, 
 	bestPeriod = 40
 
 	for period := 10; period < 333; period++ {
-
-		account.Balance = initialBalance
-		account.PositionSize = 0.0
 
 		signalEvents := df.DonchainStrategy(period, account)
 		if signalEvents == nil {
@@ -152,14 +178,11 @@ func (df *DataFrameCandle) OptimizeDonchainPayOffRatio() (performance float64, b
 
 	for period := 10; period < 333; period++ {
 
-		account.Balance = initialBalance
-		account.PositionSize = 0.0
-
 		signalEvents := df.DonchainStrategy(period, account)
 		if signalEvents == nil {
 			continue
 		}
-		pf := analytics.ProfitFactor(signalEvents)
+		pf := analytics.PayOffRatio(signalEvents)
 		if performance < pf {
 			performance = pf
 			bestPeriod = period
@@ -168,7 +191,39 @@ func (df *DataFrameCandle) OptimizeDonchainPayOffRatio() (performance float64, b
 
 	}
 
-	fmt.Println("プロフィットファクター", performance, "最適なピリオド", bestPeriod)
+	fmt.Println("ペイオフレシオ", performance, "最適なピリオド", bestPeriod)
+
+	return performance, bestPeriod
+}
+
+func (df *DataFrameCandle) OptimizeDonchainGoroutin() (performance float64, bestPeriod int) {
+
+	bestPeriod = 40
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	for period := 10; period < 333; period++ {
+		wg.Add(1)
+		go func(period int) {
+			defer wg.Done()
+			account := trader.NewAccount(1000)
+			signalEvents := df.DonchainStrategy(period, account)
+			if signalEvents == nil {
+				return
+			}
+			pf := analytics.PayOffRatio(signalEvents)
+			mu.Lock()
+			if performance < pf {
+				performance = pf
+				bestPeriod = period
+			}
+			mu.Unlock()
+		}(period)
+	}
+
+	wg.Wait()
+
+	fmt.Println("ペイオフレシオ", performance, "最適なピリオド", bestPeriod)
 
 	return performance, bestPeriod
 }
@@ -200,31 +255,60 @@ func RunBacktestDonchain() {
 		log.Fatal(err)
 	}
 
-	// df, _ := strategey.GetCandleData(assetName, duration)
+	// performanceProfit, bestProfit := df.OptimizeDonchainProfit()
 
-	// profit, period := df.OptimizeProfitDonchain()
+	// if performanceProfit > 0 {
 
-	// if profit > 0 {
-
-	// 	df.Signal = df.DonchainStrategy(period)
-
-	// }
-
-	// winrate, bestWinRateperiod := df.OptimizeDonchainWinRate()
-
-	// if winrate > 0 {
-
-	// 	df.Signal = df.DonchainStrategy(bestWinRateperiod, account)
+	// 	df.Signal = df.DonchainStrategy(bestProfit, account)
+	// 	fmt.Println("🔺利益最適化")
+	// 	Result(df.Signal)
 
 	// }
 
-	// Result(df.Signal)
+	// performanceLoss, bestLoss := df.OptimizeDonchainLoss()
 
-	performance, bestProfitPeriod := df.OptimizeDonchainProfitFactor()
+	// if performanceLoss > 0 {
 
-	if performance > 0 {
+	// 	df.Signal = df.DonchainStrategy(bestLoss, account)
+	// 	fmt.Println("🔺損失最適化")
+	// 	Result(df.Signal)
 
-		df.Signal = df.DonchainStrategy(bestProfitPeriod, account)
+	// }
+
+	// performanceWinRate, bestWinRate := df.OptimizeDonchainWinRate()
+
+	// if performanceWinRate > 0 {
+
+	// 	df.Signal = df.DonchainStrategy(bestWinRate, account)
+	// 	fmt.Println("🔺勝率最適化")
+	// 	Result(df.Signal)
+
+	// }
+	// performanceProfitPeriod, bestProfitPeriod := df.OptimizeDonchainProfitFactor()
+
+	// if performanceProfitPeriod > 0 {
+
+	// 	df.Signal = df.DonchainStrategy(bestProfitPeriod, account)
+	// 	fmt.Println("🔺プロフィットファクター最適化")
+	// 	Result(df.Signal)
+
+	// }
+	// goperformancePayOffRatio, gobestPayOffRatioPeriod := df.OptimizeDonchainGoroutin()
+
+	// if goperformancePayOffRatio > 0 {
+
+	// 	df.Signal = df.DonchainStrategy(gobestPayOffRatioPeriod, account)
+	// 	fmt.Println("🔺goroutinペイオフレシオ最適化")
+	// 	Result(df.Signal)
+
+	// }
+
+	performancePayOffRatio, bestPayOffRatioPeriod := df.OptimizeDonchainPayOffRatio()
+
+	if performancePayOffRatio > 0 {
+
+		df.Signal = df.DonchainStrategy(bestPayOffRatioPeriod, account)
+		fmt.Println("🔺ペイオフレシオ最適化")
 		Result(df.Signal)
 
 	}

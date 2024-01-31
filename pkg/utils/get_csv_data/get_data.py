@@ -19,6 +19,6 @@ if __name__ == '__main__':
             tickers=tickers,
             date_start=None,
             date_end=None,
-            is_to_update_existing=False,
+            is_to_update_existing=True,
             tickers_to_exclude=["UST"],
         )

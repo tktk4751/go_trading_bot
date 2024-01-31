@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"runtime"
+	"sync"
 	"v1/pkg/analytics"
 	"v1/pkg/config"
 	"v1/pkg/execute"
@@ -30,6 +32,8 @@ func (df *DataFrameCandle) RsiStrategy(period int, buyThread float64, sellThread
 	values := talib.Rsi(close, period)
 
 	buySize := 0.0
+	buyPrice := 0.0
+	slRatio := 0.9
 
 	isBuyHolding := false
 	for i := 1; i < lenCandles; i++ {
@@ -39,18 +43,18 @@ func (df *DataFrameCandle) RsiStrategy(period int, buyThread float64, sellThread
 
 		if values[i-1] < buyThread && values[i] >= buyThread && !isBuyHolding {
 			buySize = account.TradeSize(riskSize) / df.Candles[i].Close
-
+			buyPrice = df.Candles[i].Close
 			if account.Buy(df.Candles[i].Close, buySize) {
 
-				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
+				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, false)
 				isBuyHolding = true
 
 			}
 		}
 
-		if values[i-1] > float64(sellThread) && values[i] <= float64(sellThread) && isBuyHolding {
+		if values[i-1] > sellThread && values[i] <= sellThread || (df.Candles[i].Close <= buyPrice*slRatio) && isBuyHolding {
 			if account.Sell(df.Candles[i].Close) {
-				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, true)
+				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, false)
 				isBuyHolding = false
 				buySize = 0.0
 				account.PositionSize = buySize
@@ -271,7 +275,7 @@ func (df *DataFrameCandle) OptimizeRsiProfitFactor() (performance float64, bestP
 					continue
 				}
 
-				if analytics.TotalTrades(signalEvents) < 40 {
+				if analytics.TotalTrades(signalEvents) < 20 {
 					continue
 				}
 
@@ -297,7 +301,7 @@ func (df *DataFrameCandle) OptimizeRsiPayOffRatio() (performance float64, bestPe
 	bestPeriod = 14
 	bestBuyThread, bestSellThread = 20.0, 80.0
 
-	for period := 4; period < 25; period++ {
+	for period := 3; period < 25; period++ {
 		for buyThread := 30.0; buyThread > 10; buyThread -= 1 {
 
 			for sellThread := 75.0; sellThread < 96; sellThread += 1 {
@@ -306,12 +310,12 @@ func (df *DataFrameCandle) OptimizeRsiPayOffRatio() (performance float64, bestPe
 					continue
 				}
 
-				if analytics.TotalTrades(signalEvents) < 40 {
+				if analytics.TotalTrades(signalEvents) < 20 {
 					continue
 				}
 
 				payOffRatio := analytics.PayOffRatio(signalEvents)
-				if performance < payOffRatio {
+				if performance == 0 || performance < payOffRatio {
 					performance = payOffRatio
 					bestPeriod = period
 					bestBuyThread = buyThread
@@ -341,7 +345,7 @@ func (df *DataFrameCandle) OptimizeRsiSharpRatio() (performance float64, bestPer
 					continue
 				}
 
-				if analytics.TotalTrades(signalEvents) < 40 {
+				if analytics.TotalTrades(signalEvents) < 20 {
 					continue
 				}
 
@@ -358,6 +362,51 @@ func (df *DataFrameCandle) OptimizeRsiSharpRatio() (performance float64, bestPer
 	}
 
 	fmt.Println("シャープレシオ", performance, "最適なピリオド", bestPeriod, "最適な買いライン", bestBuyThread, "最適な売りライン", bestSellThread)
+
+	return performance, bestPeriod, bestBuyThread, bestSellThread
+}
+
+func (df *DataFrameCandle) OptimizeRsiGoroutin() (performance float64, bestPeriod int, bestBuyThread, bestSellThread float64) {
+	runtime.GOMAXPROCS(10)
+
+	bestPeriod = 13
+	bestBuyThread, bestSellThread = 20.0, 80.0
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	for period := 2; period < 28; period++ {
+		for buyThread := 30.0; buyThread > 10; buyThread -= 1 {
+			for sellThread := 70.0; sellThread < 96; sellThread += 1 {
+				wg.Add(1)
+				go func(period int, buyThread, sellThread float64) {
+					defer wg.Done()
+					account := trader.NewAccount(1000) // Move this line inside the goroutine
+					signalEvents := df.RsiStrategy(period, buyThread, sellThread, account)
+					if signalEvents == nil {
+						return
+					}
+
+					if analytics.TotalTrades(signalEvents) < 20 {
+						return
+					}
+
+					payOffRatio := analytics.NetProfit(signalEvents)
+					mu.Lock()
+					if performance == 0 || performance < payOffRatio {
+						performance = payOffRatio
+						bestPeriod = period
+						bestBuyThread = buyThread
+						bestSellThread = sellThread
+					}
+					mu.Unlock()
+				}(period, buyThread, sellThread)
+			}
+		}
+	}
+
+	wg.Wait()
+
+	fmt.Println("ペイオフレシオ", performance, "最適なピリオド", bestPeriod, "最適な買いライン", bestBuyThread, "最適な売りライン", bestSellThread)
 
 	return performance, bestPeriod, bestBuyThread, bestSellThread
 }
@@ -389,7 +438,7 @@ func RunBacktestRsi() {
 		log.Fatal(err)
 	}
 
-	performance, bestPeriod, bestBuyThread, bestSellThread := df.OptimizeRsiPayOffRatio()
+	performance, bestPeriod, bestBuyThread, bestSellThread := df.OptimizeRsiGoroutin()
 
 	if performance > 0 {
 
