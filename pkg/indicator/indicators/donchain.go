@@ -31,3 +31,18 @@ func Donchain(high []float64, low []float64, period int) Donchan {
 
 	return Donchan{High: h, Low: l, Mid: m}
 }
+
+func DonchainHigh(high []float64, period int) Donchan {
+	h := make([]float64, len(high))
+
+	for i := range h {
+		if i < period-1 {
+			h[i] = 0
+		} else {
+			h[i] = talib.Max(high[i-period+1:i+1], period)[period-1]
+
+		}
+	}
+
+	return Donchan{High: h}
+}

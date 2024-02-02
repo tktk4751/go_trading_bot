@@ -51,6 +51,9 @@ func main() {
 
 	// a := position.Risk_size_calculator(0.4, 5.98, 0.093)
 	// fmt.Println(a)
+	strategey.RunBacktestEma()
+	strategey.RunBacktestDonchain()
+	strategey.RunBacktestMacd()
 	strategey.RunBacktestRsi()
 	// strategyName := "B&H"
 	// assetName := config.AssetName

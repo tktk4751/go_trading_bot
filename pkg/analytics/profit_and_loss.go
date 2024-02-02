@@ -1,7 +1,6 @@
 package analytics
 
 import (
-	"math"
 	"time"
 
 	dbquery "v1/pkg/data/query"
@@ -144,9 +143,9 @@ func ProfitFactor(s *execute.SignalEvents) float64 {
 	totalProfit := Profit(s)
 	totalLoss := Loss(s)
 
-	if totalLoss == 0 {
-		return math.Inf(1)
-	}
+	// if totalLoss == 0 {
+	// 	return math.Inf(1)
+	// }
 
 	return totalProfit / totalLoss
 }

@@ -3,7 +3,8 @@ package strategey
 import (
 	"fmt"
 	"log"
-	"math"
+	"runtime"
+	"sync"
 	"v1/pkg/analytics"
 	"v1/pkg/config"
 	"v1/pkg/execute"
@@ -50,153 +51,67 @@ func (df *DataFrameCandle) BbStrategy(n int, k float64, account *trader.Account)
 	return signalEvents
 }
 
-func (df *DataFrameCandle) OptimizeBbProfit() (performance float64, bestN int, bestK float64) {
+func (df *DataFrameCandle) OptimizeBbGoroutin() (performance float64, bestN int, bestK float64) {
+	runtime.GOMAXPROCS(10)
 
-	account := trader.NewAccount(1000)
 	bestN = 20
 	bestK = 2.0
 
-	for n := 13; n < 200; n++ {
+	a := trader.NewAccount(1000)
+
+	marketDefault, _ := BuyAndHoldingStrategy(a)
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	for n := 10; n < 300; n++ {
 		for k := 2.0; k < 3.5; k += 0.1 {
-			signalEvents := df.BbStrategy(n, k, account)
-			if signalEvents == nil {
-				continue
-			}
-			if analytics.TotalTrades(signalEvents) < 50 {
-				continue
-			}
-			profit := analytics.NetProfit(signalEvents)
-			if performance < profit {
-				performance = profit
-				bestN = n
-				bestK = k
-			}
+
+			wg.Add(1)
+			go func(n int, k float64) {
+				defer wg.Done()
+				account := trader.NewAccount(1000) // Move this line inside the goroutine
+				signalEvents := df.BbStrategy(n, k, account)
+
+				if signalEvents == nil {
+					return
+				}
+
+				if analytics.TotalTrades(signalEvents) < 20 {
+					return
+				}
+
+				if analytics.NetProfit(signalEvents) < marketDefault {
+					return
+				}
+
+				// if analytics.WinRate(signalEvents) < 0.50 {
+				// 	return
+				// }
+
+				// if analytics.PayOffRatio(signalEvents) < 1 {
+				// 	return
+				// }
+
+				p := analytics.NetProfit(signalEvents)
+				mu.Lock()
+				if performance == 0 || performance < p {
+					performance = p
+					bestN = n
+					bestK = k
+
+				}
+				mu.Unlock()
+			}(n, k)
+
 		}
 	}
 
-	fmt.Println("最高利益", performance, "最適なピリオド", bestN, "最適な標準偏差", bestK)
+	wg.Wait()
+
+	fmt.Println("最高利益", performance, "最適なN", bestN, "最適なK", bestK)
 
 	return performance, bestN, bestK
 }
-
-func (df *DataFrameCandle) OptimizeBbLoss() (performance float64, bestN int, bestK float64) {
-
-	account := trader.NewAccount(1000)
-
-	bestN = 20
-	bestK = 2.0
-	performance = math.MaxFloat64
-
-	for n := 5; n < 120; n++ {
-		for k := 1.8; k < 3.8; k += 0.1 {
-			signalEvents := df.BbStrategy(n, k, account)
-			if signalEvents == nil {
-				continue
-			}
-			loss := analytics.Loss(signalEvents)
-			if performance < loss {
-				performance = loss
-				bestN = n
-				bestK = k
-			}
-		}
-	}
-
-	fmt.Println("損失", performance, "最適なピリオド", bestN, "最適な標準偏差", bestK)
-
-	return performance, bestN, bestK
-}
-
-func (df *DataFrameCandle) OptimizeBbWinRate() (performance float64, bestN int, bestK float64) {
-	account := trader.NewAccount(1000)
-
-	bestN = 20
-	bestK = 2.0
-
-	for n := 13; n < 200; n++ {
-		for k := 1.8; k < 3.5; k += 0.1 {
-			signalEvents := df.BbStrategy(n, k, account)
-			if signalEvents == nil {
-				continue
-			}
-
-			if analytics.TotalTrades(signalEvents) < 20 {
-				continue
-			}
-			winrate := analytics.WinRate(signalEvents)
-			if performance < winrate {
-				performance = winrate
-				bestN = n
-				bestK = k
-			}
-		}
-	}
-
-	fmt.Println("最高勝率", performance, "最適なピリオド", bestN, "最適な標準偏差", bestK)
-
-	return performance, bestN, bestK
-}
-
-func (df *DataFrameCandle) OptimizeBbProfitFactor() (performance float64, bestN int, bestK float64) {
-	account := trader.NewAccount(1000)
-
-	bestN = 20
-	bestK = 2.0
-
-	for n := 13; n < 200; n++ {
-		for k := 1.8; k < 3.5; k += 0.1 {
-			signalEvents := df.BbStrategy(n, k, account)
-			if signalEvents == nil {
-				continue
-			}
-
-			if analytics.TotalTrades(signalEvents) < 20 {
-				continue
-			}
-			winrate := analytics.ProfitFactor(signalEvents)
-			if performance < winrate {
-				performance = winrate
-				bestN = n
-				bestK = k
-			}
-		}
-	}
-
-	fmt.Println("プロフィットファクター", performance, "最適なピリオド", bestN, "最適な標準偏差", bestK)
-
-	return performance, bestN, bestK
-}
-
-func (df *DataFrameCandle) OptimizeBbPayOffRatio() (performance float64, bestN int, bestK float64) {
-	account := trader.NewAccount(1000)
-
-	bestN = 20
-	bestK = 2.0
-
-	for n := 13; n < 200; n++ {
-		for k := 1.8; k < 3.5; k += 0.1 {
-			signalEvents := df.BbStrategy(n, k, account)
-			if signalEvents == nil {
-				continue
-			}
-
-			if analytics.TotalTrades(signalEvents) < 20 {
-				continue
-			}
-			winrate := analytics.PayOffRatio(signalEvents)
-			if performance < winrate {
-				performance = winrate
-				bestN = n
-				bestK = k
-			}
-		}
-	}
-
-	fmt.Println("ペイオフレシオ", performance, "最適なピリオド", bestN, "最適な標準偏差", bestK)
-
-	return performance, bestN, bestK
-}
-
 func RunBacktestBb() {
 
 	var err error
@@ -209,22 +124,15 @@ func RunBacktestBb() {
 
 	fmt.Println(btcfg.AssetName)
 
-	strategyName := getStrageyNameBb()
 	assetName := btcfg.AssetName
 	duration := btcfg.Dration
+	// limit := btcfg.Limit
 
 	account := trader.NewAccount(1000)
 
 	df, _ := GetCandleData(assetName, duration)
 
-	tableName := strategyName + "_" + assetName + "_" + duration
-
-	_, err = execute.CreateDBTable(tableName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	performance, bestN, bestK := df.OptimizeBbProfitFactor()
+	performance, bestN, bestK := df.OptimizeBbGoroutin()
 
 	if performance > 0 {
 

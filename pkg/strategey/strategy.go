@@ -162,7 +162,7 @@ func Result(s *execute.SignalEvents) {
 
 	name := n.StrategyName + "_" + n.AssetName + "_" + n.Duration
 
-	fmt.Println(name)
+	fmt.Println("🌟", name, "🌟")
 	fmt.Println("初期残高", initialBalance)
 	fmt.Println("最終残高", l, lr)
 	fmt.Println("勝率", analytics.WinRate(s)*100, "%")
@@ -186,5 +186,5 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("1トレードの最大損失と日時", ml, mt)
 	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
 
-	fmt.Println(s)
+	// fmt.Println(s)
 }
