@@ -64,16 +64,21 @@ func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, 
 	bestPeriod1 = 5
 	bestPeriod2 = 21
 
+	limit := 1000
+	slots := make(chan struct{}, limit)
+
 	// a := trader.NewAccount(1000)
 
 	// marketDefault, _ := BuyAndHoldingStrategy(a)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	for period1 := 3; period1 < 100; period1++ {
-		for period2 := 5; period2 < 300; period2++ {
+	for period1 := 3; period1 < 200; period1++ {
+		for period2 := 5; period2 < 400; period2++ {
 
 			wg.Add(1)
+			slots <- struct{}{}
+
 			go func(period1 int, period2 int) {
 				defer wg.Done()
 				account := trader.NewAccount(1000) // Move this line inside the goroutine
@@ -84,18 +89,24 @@ func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, 
 				}
 
 				// if analytics.TotalTrades(signalEvents) < 20 {
+				// <-slots
 				// 	return
 				// }
 
 				// if analytics.NetProfit(signalEvents) < marketDefault {
+				// <-slots
 				// 	return
 				// }
 
 				// if analytics.WinRate(signalEvents) < 0.50 {
+				// <-slots
+
 				// 	return
 				// }
 
 				// if analytics.PayOffRatio(signalEvents) < 1 {
+				// <-slots
+
 				// 	return
 				// }
 
@@ -107,7 +118,9 @@ func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, 
 					bestPeriod2 = period2
 
 				}
+				<-slots
 				mu.Unlock()
+
 			}(period1, period2)
 
 		}
