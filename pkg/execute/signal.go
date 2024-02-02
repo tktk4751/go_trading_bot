@@ -24,6 +24,7 @@ type SignalEvent struct {
 	AccountBalance float64
 }
 
+// ロングとショートに対応させる
 func (s *SignalEvent) GetTableName() string {
 	tableName := s.StrategyName + "_" + s.AssetName + "_" + s.Duration
 	return tableName
