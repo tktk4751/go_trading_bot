@@ -51,7 +51,7 @@ func (df *DataFrameCandle) DonchainStrategy(period int, account *trader.Account)
 		}
 		if close[i] < donchain.Low[i-1] && isHolding {
 			accountBalance := account.GetBalance()
-			if account.Sell(df.Candles[i].Close) {
+			if account.Sell(df.Candles[i].Close, 0.0) {
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isHolding = false
 				buySize = 0.0

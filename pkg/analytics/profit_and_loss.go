@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"math"
 	"time"
 
 	dbquery "v1/pkg/data/query"
@@ -69,7 +70,7 @@ func Profi2(s *execute.SignalEvents) float64 {
 	return profit
 }
 
-func Profit(s *execute.SignalEvents) float64 {
+func LongProfit(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
@@ -86,11 +87,125 @@ func Profit(s *execute.SignalEvents) float64 {
 		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
+
 		} else if signal.Side == "SELL" && buyPrice != 0 {
 			if signal.Price > buyPrice {
 				profit += (signal.Price - buyPrice) * signal.Size
 			}
 			buyPrice = 0 // Reset buy price after a sell
+		}
+	}
+
+	return profit
+}
+func Profit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	var profit float64 = 0.0
+	var entryPrice float64
+	var entrySide string
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" {
+			return 0.0
+		}
+		if entryPrice == 0 {
+			// 最初のエントリーの場合
+			entryPrice = signal.Price
+			entrySide = signal.Side
+
+		} else if signal.Side != entrySide {
+			// エグジットの場合
+			if entrySide == "BUY" {
+				// ロングエントリーの場合
+				if signal.Price > entryPrice {
+					profit += (signal.Price - entryPrice) * signal.Size
+				}
+			} else {
+				// ショートエントリーの場合
+				if signal.Price < entryPrice {
+					profit += (entryPrice - signal.Price) * math.Abs(signal.Size) // サイズを絶対値にする
+				}
+			}
+			entryPrice = 0 // エントリー価格をリセットする
+			entrySide = "" // エントリーのサイドをリセットする
+		}
+	}
+
+	return profit
+}
+
+// func Profit(s *execute.SignalEvents) float64 {
+// 	if s == nil {
+// 		return 0.0
+// 	}
+// 	var profit float64 = 0.0
+// 	var buyPrice float64
+// 	var sellPrice float64
+
+// 	if s.Signals == nil || len(s.Signals) == 0 {
+// 		return 0.0
+// 	}
+// 	for _, signal := range s.Signals {
+
+// 		if signal.Side != "BUY" && signal.Side != "SELL" {
+// 			return 0.0
+// 		}
+// 		if signal.Side == "BUY" {
+// 			buyPrice = signal.Price
+
+// 		} else if signal.Side == "SELL" {
+// 			sellPrice = signal.Price
+// 		}
+
+// 		if signal.Side == "SELL" && buyPrice != 0 {
+// 			if signal.Price > buyPrice {
+// 				profit += (signal.Price - buyPrice) * signal.Size
+// 			}
+// 			buyPrice = 0 // Reset buy price after a sell
+// 		}
+
+// 		if signal.Side == "BUY" && sellPrice != 0 {
+// 			if signal.Price > sellPrice {
+// 				profit += (signal.Price - sellPrice) * signal.Size
+// 			}
+// 			sellPrice = 0 // Reset buy price after a sell
+// 		}
+// 	}
+
+// 	return profit
+// }
+
+func ShortProfit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	var profit float64 = 0.0
+	var sellPrice float64
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" {
+			return 0.0
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+
+		}
+
+		if signal.Side == "BUY" && sellPrice != 0 {
+			if signal.Price > sellPrice {
+				profit += (signal.Price - sellPrice) * signal.Size
+			}
+			sellPrice = 0 // Reset buy price after a sell
 		}
 	}
 

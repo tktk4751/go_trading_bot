@@ -47,7 +47,7 @@ func (df *DataFrameCandle) EmaStrategy(period1, period2 int, account *trader.Acc
 		}
 		if emaValue1[i-1] > emaValue2[i-1] && emaValue1[i] <= emaValue2[i] || rsiValue[i] < 30.0 || (df.Candles[i].Close <= buyPrice*slRatio) && isBuyHolding {
 			accountBalance := account.GetBalance()
-			if account.Sell(df.Candles[i].Close) {
+			if account.Sell(df.Candles[i].Close, 0.0) {
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isBuyHolding = false
 				buySize = 0.0

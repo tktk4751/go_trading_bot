@@ -165,8 +165,11 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("🌟", name, "🌟")
 	fmt.Println("初期残高", initialBalance)
 	fmt.Println("最終残高", l, lr)
+
 	fmt.Println("勝率", analytics.WinRate(s)*100, "%")
 	fmt.Println("総利益", analytics.Profit(s))
+	fmt.Println("ロング利益", analytics.LongProfit(s))
+	fmt.Println("ショート利益", analytics.ShortProfit(s))
 	fmt.Println("総損失", analytics.Loss(s))
 	fmt.Println("プロフィットファクター", analytics.ProfitFactor(s))
 	fmt.Println("最大ドローダウン金額", analytics.MaxDrawdownUSD(s), "USD ")
@@ -186,5 +189,5 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("1トレードの最大損失と日時", ml, mt)
 	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
 
-	// fmt.Println(s)
+	fmt.Println(s)
 }

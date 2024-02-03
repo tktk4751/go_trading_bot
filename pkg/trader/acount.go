@@ -29,13 +29,16 @@ func (a *Account) Buy(price, size float64) bool {
 }
 
 func (a *Account) HolderBuy(price, size float64) bool {
-
-	a.Balance -= price * size
+	cost := price * size
+	if cost > a.Balance {
+		return false
+	}
+	a.Balance -= cost
 	a.PositionSize = size
 	return true
 }
 
-func (a *Account) Sell(price float64) bool {
+func (a *Account) Sell(price, size float64) bool {
 	if a.PositionSize <= 0 {
 		return false
 	}
