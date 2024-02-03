@@ -51,7 +51,7 @@ func (df *DataFrameCandle) DonchainStrategy(period int, account *trader.Account)
 		}
 		if close[i] < donchain.Low[i-1] && isHolding {
 			accountBalance := account.GetBalance()
-			if account.Sell(df.Candles[i].Close, 0.0) {
+			if account.Sell(df.Candles[i].Close) {
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isHolding = false
 				buySize = 0.0
@@ -204,9 +204,8 @@ func (df *DataFrameCandle) OptimizeDonchainGoroutin() (performance float64, best
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	// a := trader.NewAccount(1000)
-
-	// marketDefault, _ := BuyAndHoldingStrategy(a)
+	a := trader.NewAccount(1000)
+	marketDefault, _ := BuyAndHoldingStrategy(a)
 
 	for period := 10; period < 333; period++ {
 		wg.Add(1)
@@ -219,13 +218,13 @@ func (df *DataFrameCandle) OptimizeDonchainGoroutin() (performance float64, best
 				return
 			}
 
-			// if analytics.TotalTrades(signalEvents) < 20 {
-			// 	return
-			// }
+			if analytics.TotalTrades(signalEvents) < 3 {
+				return
+			}
 
-			// if analytics.NetProfit(signalEvents) < marketDefault {
-			// 	return
-			// }
+			if analytics.NetProfit(signalEvents) < marketDefault {
+				return
+			}
 
 			// if analytics.WinRate(signalEvents) < 0.45 {
 			// 	return
@@ -262,7 +261,7 @@ func RunBacktestDonchain() {
 		log.Fatalf("error: %v", err)
 	}
 
-	fmt.Println(btcfg.AssetName)
+	fmt.Println("--------------------------------------------")
 
 	// strategyName := getStrageyNameDonchain()
 	assetName := btcfg.AssetName

@@ -21,9 +21,11 @@ func (df *DataFrameCandle) EmaStrategy(period1, period2 int, account *trader.Acc
 		return nil
 	}
 	signalEvents := execute.NewSignalEvents()
-	emaValue1 := talib.Ema(df.Closes(), period1)
-	emaValue2 := talib.Ema(df.Closes(), period2)
-	rsiValue := talib.Rsi(df.Closes(), 14)
+
+	emaValue1 := talib.Ema(df.Hlc3(), period1)
+	emaValue2 := talib.Ema(df.Hlc3(), period2)
+
+	// rsiValue := talib.Rsi(df.Closes(), 14)
 
 	buySize := 0.0
 	buyPrice := 0.0
@@ -45,9 +47,9 @@ func (df *DataFrameCandle) EmaStrategy(period1, period2 int, account *trader.Acc
 
 			}
 		}
-		if emaValue1[i-1] > emaValue2[i-1] && emaValue1[i] <= emaValue2[i] || rsiValue[i] < 30.0 || (df.Candles[i].Close <= buyPrice*slRatio) && isBuyHolding {
+		if emaValue1[i-1] > emaValue2[i-1] && emaValue1[i] <= emaValue2[i] || (df.Candles[i].Close <= buyPrice*slRatio) && isBuyHolding {
 			accountBalance := account.GetBalance()
-			if account.Sell(df.Candles[i].Close, 0.0) {
+			if account.Sell(df.Candles[i].Close) {
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isBuyHolding = false
 				buySize = 0.0
@@ -67,14 +69,14 @@ func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, 
 	limit := 1000
 	slots := make(chan struct{}, limit)
 
-	// a := trader.NewAccount(1000)
+	a := trader.NewAccount(1000)
+	marketDefault, _ := BuyAndHoldingStrategy(a)
 
-	// marketDefault, _ := BuyAndHoldingStrategy(a)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	for period1 := 3; period1 < 200; period1++ {
-		for period2 := 5; period2 < 400; period2++ {
+	for period1 := 3; period1 < 100; period1 += 3 {
+		for period2 := 5; period2 < 240; period2 += 3 {
 
 			wg.Add(1)
 			slots <- struct{}{}
@@ -88,15 +90,15 @@ func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, 
 					return
 				}
 
-				// if analytics.TotalTrades(signalEvents) < 20 {
-				// <-slots
-				// 	return
-				// }
+				if analytics.TotalTrades(signalEvents) < 3 {
+					<-slots
+					return
+				}
 
-				// if analytics.NetProfit(signalEvents) < marketDefault {
-				// <-slots
-				// 	return
-				// }
+				if analytics.NetProfit(signalEvents) < marketDefault {
+					<-slots
+					return
+				}
 
 				// if analytics.WinRate(signalEvents) < 0.50 {
 				// <-slots
@@ -167,7 +169,7 @@ func RunBacktestEma() {
 		log.Fatalf("error: %v", err)
 	}
 
-	fmt.Println(btcfg.AssetName)
+	fmt.Println("--------------------------------------------")
 
 	assetName := btcfg.AssetName
 	duration := btcfg.Dration

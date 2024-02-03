@@ -140,6 +140,14 @@ func (df *DataFrameCandle) Volume() []float64 {
 	return s
 }
 
+func (df *DataFrameCandle) Hlc3() []float64 {
+	s := make([]float64, len(df.Candles))
+	for i, candle := range df.Candles {
+		s[i] = (candle.High + candle.Low + candle.Close) / 3
+	}
+	return s
+}
+
 func Result(s *execute.SignalEvents) {
 
 	if s == nil || len(s.Signals) == 0 {
@@ -168,8 +176,8 @@ func Result(s *execute.SignalEvents) {
 
 	fmt.Println("勝率", analytics.WinRate(s)*100, "%")
 	fmt.Println("総利益", analytics.Profit(s))
-	fmt.Println("ロング利益", analytics.LongProfit(s))
-	fmt.Println("ショート利益", analytics.ShortProfit(s))
+	// fmt.Println("ロング利益", analytics.LongProfit(s))
+	// fmt.Println("ショート利益", analytics.ShortProfit(s))
 	fmt.Println("総損失", analytics.Loss(s))
 	fmt.Println("プロフィットファクター", analytics.ProfitFactor(s))
 	fmt.Println("最大ドローダウン金額", analytics.MaxDrawdownUSD(s), "USD ")

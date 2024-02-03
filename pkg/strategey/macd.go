@@ -55,7 +55,7 @@ func (df *DataFrameCandle) MacdStrategy(macdFastPeriod, macdSlowPeriod, macdSign
 			outMACD[i] <= outMACDSignal[i] ||
 			(df.Candles[i].Close <= buyPrice*slRatio) && isBuyHolding {
 			accountBalance := account.GetBalance()
-			if account.Sell(df.Candles[i].Close, 0.0) {
+			if account.Sell(df.Candles[i].Close) {
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isBuyHolding = false
 				buySize = 0.0

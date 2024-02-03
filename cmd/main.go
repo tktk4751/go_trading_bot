@@ -56,7 +56,7 @@ func main() {
 	// strategey.RunBacktestMacd()
 	// strategey.RunBacktestRsi()
 
-	strategey.RunBacktestEma2()
+	strategey.RunBacktestEma()
 
 	// strategyName := "B&H"
 	// assetName := config.AssetName

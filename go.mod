@@ -18,6 +18,7 @@ require (
 require (
 	github.com/acroca/go-symbols v0.1.1 // indirect
 	github.com/go-echarts/go-echarts/v2 v2.3.3 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/iamjinlei/go-tachart v0.0.0-20210729041122-12052a3368c8 // indirect
 	github.com/iamjinlei/go-tart v0.0.0-20210623083942-ceb57e98706b // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect

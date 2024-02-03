@@ -3,25 +3,19 @@ package execute
 import (
 	"fmt"
 	"log"
-	"math"
-	"math/rand"
 	"time"
 	"v1/pkg/config"
 
 	"database/sql"
 
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/oklog/ulid"
 )
 
 var db *sql.DB
 
-var t = time.Now()
-
-var entropy = ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-
 type SignalEvent struct {
-	SignalId       ulid.ULID
+	SignalId       uuid.UUID
 	Time           time.Time `json:"time"`
 	StrategyName   string    `json:"strategy_name"`
 	AssetName      string    `json:"asset_name"`
@@ -118,9 +112,9 @@ func NewSignalEvents() *SignalEvents {
 	return &SignalEvents{}
 }
 
-func (s *SignalEvents) CanLong(t time.Time) bool {
+func (s *SignalEvents) CanBuy(t time.Time) bool {
 	lenSignals := len(s.Signals)
-	if lenSignals < 2 {
+	if lenSignals == 0 {
 		return true
 	}
 
@@ -131,9 +125,9 @@ func (s *SignalEvents) CanLong(t time.Time) bool {
 	return false
 }
 
-func (s *SignalEvents) CanShort(t time.Time) bool {
+func (s *SignalEvents) CanSell(t time.Time) bool {
 	lenSignals := len(s.Signals)
-	if lenSignals < 2 {
+	if lenSignals == 0 {
 		return false
 	}
 
@@ -146,14 +140,13 @@ func (s *SignalEvents) CanShort(t time.Time) bool {
 
 func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) bool {
 
-	if !s.CanLong(date) {
+	if !s.CanBuy(date) {
 		return false
 	}
 
-	id := ulid.MustNew(ulid.Timestamp(t), entropy)
-
+	signalId := uuid.New()
 	signalEvent := SignalEvent{
-		SignalId:       id,
+		SignalId:       signalId,
 		Time:           date,
 		StrategyName:   strategyName,
 		AssetName:      assetName,
@@ -177,15 +170,13 @@ func (s *SignalEvents) Buy(strategyName string, assetName string, duration strin
 
 func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) bool {
 
-	if !s.CanShort(date) {
+	if !s.CanSell(date) {
 
 		return false
 	}
-
-	id := ulid.MustNew(ulid.Timestamp(t), entropy)
-
+	signalId := uuid.New()
 	signalEvent := SignalEvent{
-		SignalId:       id,
+		SignalId:       signalId,
 		Time:           date,
 		StrategyName:   strategyName,
 		AssetName:      assetName,
@@ -202,45 +193,5 @@ func (s *SignalEvents) Sell(strategyName string, assetName string, duration stri
 	// }
 
 	s.Signals = append(s.Signals, signalEvent)
-	return true
-}
-
-func (s *SignalEvents) Exit(strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) bool {
-
-	// ポジションがなければ何もしない
-	if size == 0 {
-		return false
-	}
-
-	id := ulid.MustNew(ulid.Timestamp(t), entropy)
-
-	// ポジションのサイドに応じて、BUYまたはSELLのシグナルを生成する
-	var side string
-	if size > 0 {
-		side = "SELL"
-	} else {
-		side = "BUY"
-	}
-
-	signalEvent := SignalEvent{
-		SignalId:       id,
-		Time:           date,
-		StrategyName:   strategyName,
-		AssetName:      assetName,
-		Duration:       duration,
-		Side:           side,
-		Price:          price,
-		Size:           math.Abs(size),
-		AccountBalance: accountBalance,
-	}
-
-	// シグナルを保存するかどうか
-	if save {
-		signalEvent.Save()
-	}
-
-	// シグナルを追加する
-	s.Signals = append(s.Signals, signalEvent)
-
 	return true
 }
