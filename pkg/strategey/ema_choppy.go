@@ -81,7 +81,7 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	for period1 := 3; period1 < 123; period1 += 3 {
+	for period1 := 3; period1 < 92; period1 += 3 {
 		for period2 := 5; period2 < 260; period2 += 3 {
 			for choppy := 8; choppy < 21; choppy += 1 {
 

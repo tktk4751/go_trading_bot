@@ -81,7 +81,7 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 	limit := 1000
 	slots := make(chan struct{}, limit)
 
-	for period := 10; period < 320; period += 5 {
+	for period := 10; period < 250; period += 3 {
 		for choppy := 8; choppy < 21; choppy += 1 {
 			wg.Add(1)
 			slots <- struct{}{}

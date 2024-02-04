@@ -21,10 +21,14 @@ func main() {
 	// 	e := risk.ChoppyEma(index)
 	// 	fmt.Println(e)
 	// strategey.RunBacktestEma()
-	strategey.RunBacktestEmaChoppy()
+	// strategey.RunBacktestEmaChoppy()
 
 	// strategey.RunBacktestDonchain()
-	strategey.RunBacktestDonchainChoppy()
+	// strategey.RunBacktestDonchainChoppy()
+
+	c, _ := strategey.GetCsvDataFrame("BTCUSDT", "4h", "2022-05", "2023-12")
+
+	fmt.Println(c)
 
 	end := time.Now()
 

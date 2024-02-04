@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"time"
-	"v1/pkg/strategey"
+	chart "v1/pkg/charts"
 	// "v1/pkg/analytics/metrics"
 	// "v1/pkg/db/models"
 	// p "v1/pkg/management/position"
@@ -38,12 +40,12 @@ import (
 //		return result
 //	}
 
-//	func logRequest(handler http.Handler) http.Handler {
-//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//			log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
-//			handler.ServeHTTP(w, r)
-//		})
-//	}
+func logRequest(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+	})
+}
 func main() {
 	start := time.Now()
 
@@ -56,7 +58,7 @@ func main() {
 	// strategey.RunBacktestMacd()
 	// strategey.RunBacktestRsi()
 
-	strategey.RunBacktestEma()
+	// strategey.RunBacktestEma()
 
 	// strategyName := "B&H"
 	// assetName := config.AssetName
@@ -139,8 +141,8 @@ func main() {
 	defer fmt.Println("メイン関数終了")
 
 	// チャート呼び出し
-	// var c chart.CandleStickChart
-	// c.CandleStickChart()
+	var c chart.CandleStickChart
+	c.CandleStickChart()
 
 	// query.GetCloseData("BTCUSDT", "4h")
 
@@ -185,9 +187,9 @@ func main() {
 
 	// fmt.Println(asset_data)
 
-	// fs := http.FileServer(http.Dir("pkg/charts/html"))
-	// log.Println("running server at http://localhost:8089")
-	// log.Fatal(http.ListenAndServe("localhost:8089", logRequest(fs)))
+	fs := http.FileServer(http.Dir("pkg/charts/html"))
+	log.Println("running server at http://localhost:8089")
+	log.Fatal(http.ListenAndServe("localhost:8089", logRequest(fs)))
 	end := time.Now()
 
 	// 処理時間を計算
