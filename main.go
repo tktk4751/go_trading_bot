@@ -3,8 +3,7 @@ package main
 import (
 	"fmt"
 	"time"
-	dbquery "v1/pkg/data/query"
-	"v1/pkg/indicator/indicators"
+	"v1/pkg/strategey"
 )
 
 func main() {
@@ -30,17 +29,17 @@ func main() {
 	// c, _ := strategey.GetCsvDataFrame("BTCUSDT", "4h", "2022-05", "2023-12")
 
 	// fmt.Println(c)
+	strategey.RunBacktestST()
 
-	a := "SOLUSDT"
-	d := "4h"
+	// hSeries := df.Candles.Col("High")
+	// lSeries := df.Candles.Col("Low")
+	// cSeries := df.Candles.Col("Close")
 
-	h, _ := dbquery.GetHighData(a, d)
-	l, _ := dbquery.GetLowData(a, d)
-	c, _ := dbquery.GetCloseData(a, d)
+	// h := hSeries.Float()
+	// l := lSeries.Float()
+	// c := cSeries.Float()
 
-	st, _ := indicators.SuperTrend(21, 3.0, h, l, c)
-
-	fmt.Println(st.SuperTrend)
+	// st, _ := indicators.SuperTrend(21, 3.0, h, l, c)
 
 	end := time.Now()
 

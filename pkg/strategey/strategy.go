@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"v1/pkg/analytics"
@@ -21,10 +22,10 @@ import (
 var initialBalance float64 = 1000.00
 var riskSize float64 = 0.9
 
-type CsvDataFrameCandle struct {
+type DataFrameCandleCsv struct {
 	AssetName string
 	Duration  string
-	Candles   dataframe.DataFrame
+	Candles   []data.Candle
 	Signal    *execute.SignalEvents
 }
 
@@ -69,7 +70,7 @@ type Strategy struct {
 	Arbitrage    bool
 }
 
-func GetCsvDataFrame(assetName string, duration string, start, end string) (*CsvDataFrameCandle, error) {
+func GetCsvDataFrame(assetName string, duration string, start, end string) (*DataFrameCandleCsv, error) {
 	// get the list of csv files from the directory
 	dir := fmt.Sprintf("pkg/data/spot/monthly/klines/%s/%s", assetName, duration)
 	files, err := os.ReadDir(dir)
@@ -140,12 +141,33 @@ func GetCsvDataFrame(assetName string, duration string, start, end string) (*Csv
 			df = df.RBind(temp)
 		}
 	}
+	var candles []data.Candle
+	records := df.Records()
+	for _, record := range records[1:] { // Skip the header row
+		date, _ := time.Parse("2006-01-02 15:04:05", record[0]) // ignore the error for simplicity
+		open, _ := strconv.ParseFloat(record[1], 64)
+		high, _ := strconv.ParseFloat(record[2], 64)
+		low, _ := strconv.ParseFloat(record[3], 64)
+		close, _ := strconv.ParseFloat(record[4], 64)
+		volume, _ := strconv.ParseFloat(record[5], 64)
+		candle := data.Candle{
+			AssetName: assetName,
+			Duration:  duration,
+			Date:      date,
+			Open:      open,
+			High:      high,
+			Low:       low,
+			Close:     close,
+			Volume:    volume,
+		}
+		candles = append(candles, candle)
+	}
 
-	// create a DataFrameCandle from the dataframe
-	dfCandle := &CsvDataFrameCandle{
+	// create a DataFrameCandleCsv from the slice of data.Candle
+	dfCandle := &DataFrameCandleCsv{
 		AssetName: assetName,
 		Duration:  duration,
-		Candles:   df,
+		Candles:   candles,
 	}
 
 	return dfCandle, nil
@@ -243,6 +265,56 @@ func (df *DataFrameCandle) Hlc3() []float64 {
 	return s
 }
 
+// csvデータフレームのメソッド
+
+func (df *DataFrameCandleCsv) Time() []time.Time {
+	s := make([]time.Time, len(df.Candles))
+	for i, candle := range df.Candles {
+		s[i] = candle.Date
+	}
+	return s
+}
+
+func (df *DataFrameCandleCsv) Closes() []float64 {
+	s := make([]float64, len(df.Candles))
+	for i, candle := range df.Candles {
+		s[i] = candle.Close
+	}
+	return s
+}
+
+func (df *DataFrameCandleCsv) Highs() []float64 {
+	s := make([]float64, len(df.Candles))
+	for i, candle := range df.Candles {
+		s[i] = candle.High
+	}
+	return s
+}
+
+func (df *DataFrameCandleCsv) Lows() []float64 {
+	s := make([]float64, len(df.Candles))
+	for i, candle := range df.Candles {
+		s[i] = candle.Low
+	}
+	return s
+}
+
+func (df *DataFrameCandleCsv) Volumes() []float64 {
+	s := make([]float64, len(df.Candles))
+	for i, candle := range df.Candles {
+		s[i] = candle.Volume
+	}
+	return s
+}
+
+func (df *DataFrameCandleCsv) Hlc3() []float64 {
+	s := make([]float64, len(df.Candles))
+	for i, candle := range df.Candles {
+		s[i] = (candle.High + candle.Low + candle.Close) / 3
+	}
+	return s
+}
+
 func Result(s *execute.SignalEvents) {
 
 	if s == nil || len(s.Signals) == 0 {
@@ -292,5 +364,5 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("1トレードの最大損失と日時", ml, mt)
 	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
 
-	// fmt.Println(s)
+	fmt.Println(s)
 }
