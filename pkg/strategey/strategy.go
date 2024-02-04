@@ -2,18 +2,31 @@ package strategey
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"time"
 	"v1/pkg/analytics"
 	"v1/pkg/data"
 	dbquery "v1/pkg/data/query"
 	"v1/pkg/execute"
 	"v1/pkg/trader"
+
+	"github.com/go-gota/gota/dataframe"
+	"github.com/go-gota/gota/series"
 )
 
 var initialBalance float64 = 1000.00
 var riskSize float64 = 0.9
+
+type CsvDataFrameCandle struct {
+	AssetName string
+	Duration  string
+	Candles   dataframe.DataFrame
+	Signal    *execute.SignalEvents
+}
 
 type DataFrameCandle struct {
 	AssetName string
@@ -54,6 +67,88 @@ type Strategy struct {
 	LangeTrading bool
 	Squeeze      bool
 	Arbitrage    bool
+}
+
+func GetCsvDataFrame(assetName string, duration string, start, end string) (*CsvDataFrameCandle, error) {
+	// get the list of csv files from the directory
+	dir := fmt.Sprintf("pkg/data/spot/monthly/klines/%s/%s", assetName, duration)
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// select only the files that are within the start and end period
+	var selected []string
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(file.Name(), ".csv") {
+			// split the file name into parts
+			parts := strings.Split(file.Name(), "-")
+			// get the year and month from the file name
+			ym := fmt.Sprintf("%s-%s", parts[2], parts[3]) // ここを修正
+			// check if the year and month are within the start and end period
+			if ym >= start && ym <= end {
+				selected = append(selected, file.Name())
+			}
+		}
+	}
+
+	// read the selected files and append them to a dataframe
+	var df dataframe.DataFrame
+	for _, file := range selected {
+		// open the file
+		f, err := os.Open(fmt.Sprintf("%s/%s", dir, file))
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		defer f.Close()
+		// create a csv reader
+		reader := csv.NewReader(f)
+		// read the records
+		records, err := reader.ReadAll()
+		if err != nil {
+			log.Fatal(err)
+		}
+		// create a dataframe from the records
+		temp := dataframe.LoadRecords(records, dataframe.HasHeader(false))
+		// rename the columns
+		temp = temp.Rename("Time", "X0")
+		temp = temp.Rename("Open", "X1")
+		temp = temp.Rename("High", "X2")
+		temp = temp.Rename("Low", "X3")
+		temp = temp.Rename("Close", "X4")
+		temp = temp.Rename("Volume", "X5")
+
+		timeCol, _ := temp.Col("Time").Int() // ignore the error for simplicity
+		formattedTimeCol := make([]string, len(timeCol))
+		for i, val := range timeCol {
+			timestamp := time.Unix(int64(val)/1000, 0)
+			formattedTimeCol[i] = timestamp.Format("2006-01-02 15:04:05")
+		}
+		temp = temp.Mutate(series.New(formattedTimeCol, series.String, "Time"))
+
+		temp = temp.Select([]string{"Time", "Open", "High", "Low", "Close", "Volume"})
+
+		// set the column names to match the first dataframe
+		if df.Nrow() == 0 {
+			df = temp
+		} else {
+			temp.SetNames(df.Names()...)
+			df = df.RBind(temp)
+		}
+	}
+
+	// create a DataFrameCandle from the dataframe
+	dfCandle := &CsvDataFrameCandle{
+		AssetName: assetName,
+		Duration:  duration,
+		Candles:   df,
+	}
+
+	return dfCandle, nil
 }
 
 func GetCandleData(assetName string, duration string) (*DataFrameCandle, error) {
@@ -140,6 +235,14 @@ func (df *DataFrameCandle) Volume() []float64 {
 	return s
 }
 
+func (df *DataFrameCandle) Hlc3() []float64 {
+	s := make([]float64, len(df.Candles))
+	for i, candle := range df.Candles {
+		s[i] = (candle.High + candle.Low + candle.Close) / 3
+	}
+	return s
+}
+
 func Result(s *execute.SignalEvents) {
 
 	if s == nil || len(s.Signals) == 0 {
@@ -165,8 +268,11 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("🌟", name, "🌟")
 	fmt.Println("初期残高", initialBalance)
 	fmt.Println("最終残高", l, lr)
+
 	fmt.Println("勝率", analytics.WinRate(s)*100, "%")
 	fmt.Println("総利益", analytics.Profit(s))
+	// fmt.Println("ロング利益", analytics.LongProfit(s))
+	// fmt.Println("ショート利益", analytics.ShortProfit(s))
 	fmt.Println("総損失", analytics.Loss(s))
 	fmt.Println("プロフィットファクター", analytics.ProfitFactor(s))
 	fmt.Println("最大ドローダウン金額", analytics.MaxDrawdownUSD(s), "USD ")
