@@ -1,0 +1,210 @@
+[33mcommit 0e0a30fab4a9e1daa5da3658cbd2e44e832ee515[m[33m ([m[1;36mHEAD -> [m[1;32mfeature/add-short-trading-function[m[33m)[m
+Author: T.K <vapor@tuvan.vapor>
+Date:   Sun Feb 4 21:35:08 2024 +0900
+
+    csvデータフレームでのキャンドルスティック取得に対応
+
+[33mcommit ff81c8b9ce629c6fc957a237c928f4766c870942[m
+Author: T.K <vapor@tuvan.vapor>
+Date:   Sun Feb 4 04:14:57 2024 +0900
+
+    ChoppyIndex戦略の実装
+
+[33mcommit c674317cec1754b502c22e0baabc6a2b89ee3779[m
+Author: T.K <vapor@tuvan.vapor>
+Date:   Sat Feb 3 20:32:37 2024 +0900
+
+    signalEvent構造体にulidを導入
+
+[33mcommit ed9a427171f45561cb4e411581270095b2356f44[m[33m ([m[1;31morigin/develop[m[33m, [m[1;32mdevelop[m[33m)[m
+Author: T.K <vapor@tuvan.vapor>
+Date:   Sat Feb 3 03:53:08 2024 +0900
+
+    first dev commit
+
+[33mcommit 03daff32fa28249816f0d1c8fadb21637d9caf87[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Author: T.K <vapor@tuvan.vapor>
+Date:   Sat Feb 3 03:46:13 2024 +0900
+
+    flow導入前の最後のコミット
+
+[33mcommit 29bcaf14ad98fa3c02060fbccc0feab10b69bccb[m
+Author: T.K <vapor@tuvan.vapor>
+Date:   Sat Feb 3 03:12:24 2024 +0900
+
+    最適化関数のGoroutinの制御
+
+[33mcommit 18c377655a7f07303be89ce8674e49a5939d3944[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Wed Jan 31 19:00:26 2024 +0900
+
+    最適化ロジックの強化
+
+[33mcommit ea5da7d746a4ae942fd4523e95957a250ca080e4[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Wed Jan 31 13:04:43 2024 +0900
+
+    Goroutinによる最適化関数の高速化実装
+
+[33mcommit 192e659814266020f9de615ee1fb0702a0a95a13[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Tue Jan 30 14:47:20 2024 +0900
+
+    バイアンドホールド指標の追加
+
+[33mcommit 9d2f31956778f689e47cafb54aa014d1d4231cee[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Tue Jan 30 08:03:07 2024 +0900
+
+    ペーパーアカウント機能の追加
+
+[33mcommit b05ab903254c1fe20c5b4dc86aaf8c7d87f6befd[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Mon Jan 29 23:02:44 2024 +0900
+
+    add AccounBlanceCalc
+
+[33mcommit 38247c0205229dd37cc2450a5209f69c8fb25600[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Mon Jan 29 01:19:39 2024 +0900
+
+    Analytics機能の強化
+
+[33mcommit c5b084de60fbe4ffdea56c7b8ecfd2f0f69bfb0b[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Sun Jan 28 10:48:08 2024 +0900
+
+    add total trade cacl
+
+[33mcommit afaf96ef97cdc026393c5436e8f57bcc94613cd8[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Sat Jan 27 21:07:30 2024 +0900
+
+    アナリティクスパッケージの実装
+
+[33mcommit 5cf33182f0ed0db261ea4b021379294699d5b9de[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Fri Jan 26 07:52:27 2024 +0900
+
+    トレード記録no
+
+[33mcommit 63b27b617fbecb1193db2afcdfe274bd834e3b90[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Fri Jan 26 00:19:24 2024 +0900
+
+    シグナルモデルの作成
+
+[33mcommit 6486eb7ac9024905e26741a323e1aa7304b5b9b6[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Thu Jan 25 19:01:42 2024 +0900
+
+    ドンちゃんチャネルの実装
+
+[33mcommit 275cac98ac547c15307c7b6b692198ba335e4ae5[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Thu Jan 25 16:04:00 2024 +0900
+
+    gitignoreの変更
+
+[33mcommit 0ac8d2261a2886f65a52262d4ff7aad768813e98[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Thu Jan 25 16:03:04 2024 +0900
+
+    gitignoreの変更
+
+[33mcommit 06a2192dfaf152db7d848dd73f9e7b87f499c710[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Thu Jan 25 15:58:25 2024 +0900
+
+    chartview機能の追加
+
+[33mcommit 2a22af2b7d8b3f7ca1dca917d2f90371ac9026ec[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Thu Jan 25 10:45:42 2024 +0900
+
+    DBへのクエリ機能を実装
+
+[33mcommit 37c813053e3531da54d3e38007aa405fb9c81e1f[m
+Merge: 76857b1 f2368b9
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Thu Jan 25 05:55:08 2024 +0900
+
+    csvtodb
+
+[33mcommit 76857b159de495bfda8ec8055417bddc926bec97[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Thu Jan 25 05:33:32 2024 +0900
+
+    csv to db 機能の実装
+
+[33mcommit f2368b9e69670deb7cada702d1a07d48385c2c42[m
+Author: tktk <txkx.1014@gmail.com>
+Date:   Tue Jan 23 19:29:04 2024 +0900
+
+    testとdbディレクトリの追加
+
+[33mcommit 27ecf1dc90a802fb0cd3867b18e996a7f355c1d4[m
+Author: tktk <txkx.1014@gmail.com>
+Date:   Tue Jan 23 18:44:34 2024 +0900
+
+    最適化機能の実装
+
+[33mcommit 9a416ebbd1b4c697f0bf7d1a5230de670b4c535c[m
+Author: tktk <txkx.1014@gmail.com>
+Date:   Tue Jan 23 18:25:19 2024 +0900
+
+    gitignoreの変更
+
+[33mcommit a22d96600c39047ff3fc96c5037dfbc3aadd2f13[m
+Author: tktk <txkx.1014@gmail.com>
+Date:   Tue Jan 23 18:15:27 2024 +0900
+
+    frontend実装
+
+[33mcommit 4b5becc022d3b58fdff57666f7517a1a3ef242b9[m
+Author: tktk <txkx.1014@gmail.com>
+Date:   Tue Jan 23 15:40:13 2024 +0900
+
+    プロジェクトの全体設計を変更｡READMEの追加
+
+[33mcommit 0a7434ebf4b299c3f243b58d4025d580f5b6901b[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Mon Jan 22 13:45:29 2024 +0900
+
+    アプリケーションで使うデータの定義ファイルを作成
+
+[33mcommit cc675da125951dd3a271f00c5ca0a178e1fefe75[m
+Author: tktk4751 <tkworld.4751@gmail.com>
+Date:   Mon Jan 22 06:44:55 2024 +0900
+
+    binanceからデータを取得するpythonスクリプトを修正
+
+[33mcommit dac418568d1fb2169c430b96c844f28105eadec0[m
+Author: t.k <tkworld.4751@gmail.com>
+Date:   Sat Jan 20 20:38:51 2024 +0900
+
+    ポジションサイズ計算機能の実装
+
+[33mcommit c5beadcab222561ead509dcb2c6a17963a23410e[m
+Author: t.k <tkworld.4751@gmail.com>
+Date:   Sat Jan 20 15:52:05 2024 +0900
+
+    勝率計算のロジック実装
+
+[33mcommit aaffb70b49cc941336bda0a3bd85b32e69bc59e0[m
+Author: t.k <tkworld.4751@gmail.com>
+Date:   Sat Jan 20 14:16:33 2024 +0900
+
+    change-gitignore
+
+[33mcommit 61debd31d5571ee1e563468c13d7119d89ccd0f7[m
+Author: t.k <tkworld.4751@gmail.com>
+Date:   Sat Jan 20 14:09:55 2024 +0900
+
+    First commit
+
+[33mcommit 3284f562b3edc2bdf16869ab47d2d4677be68833[m
+Author: t.k <tkworld.4751@gmail.com>
+Date:   Sat Jan 20 11:17:04 2024 +0900
+
+    first commit
