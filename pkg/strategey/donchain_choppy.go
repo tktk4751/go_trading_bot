@@ -26,7 +26,7 @@ func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, accoun
 
 	signalEvents := execute.NewSignalEvents()
 
-	donchain := indicators.Donchain(df.Highs(), df.Low(), period)
+	donchain := indicators.Donchain(df.Highs(), df.Lows(), period)
 	// atr := talib.Atr(df.Highs(), df.Low(), df.Closes(), 21)
 
 	close := df.Closes()
@@ -34,7 +34,7 @@ func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, accoun
 	buySize := 0.0
 	isHolding := false
 
-	index := risk.ChoppySlice(df.Closes(), df.Highs(), df.Low())
+	index := risk.ChoppySlice(df.Closes(), df.Highs(), df.Lows())
 	choppyEma := risk.ChoppyEma(index, choppy)
 
 	for i := 30; i < lenCandles; i++ {
@@ -71,7 +71,7 @@ func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, accoun
 func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64, bestPeriod int, bestChoppy int) {
 
 	bestPeriod = 40
-	bestChoppy = 50
+	bestChoppy = 13
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
@@ -82,7 +82,7 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 	slots := make(chan struct{}, limit)
 
 	for period := 10; period < 250; period += 3 {
-		for choppy := 8; choppy < 21; choppy += 1 {
+		for choppy := 5; choppy < 18; choppy += 1 {
 			wg.Add(1)
 			slots <- struct{}{}
 
@@ -115,7 +115,7 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 				// 	return
 				// }
 
-				pf := analytics.ProfitFactor(signalEvents)
+				pf := analytics.SQN(signalEvents)
 				mu.Lock()
 				if performance < pf {
 					performance = pf

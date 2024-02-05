@@ -12,9 +12,9 @@ import (
 	"v1/pkg/trader"
 )
 
-func (df *DataFrameCandleCsv) SuperTrend(atrPeriod int, factor float64, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandle) SuperTrend(atrPeriod int, factor float64, account *trader.Account) *execute.SignalEvents {
 
-	var StrategyName = "SUPERTREND_CHOPPY"
+	var StrategyName = "SUPERTREND"
 	// var err error
 
 	lenCandles := len(df.Candles)
@@ -31,9 +31,9 @@ func (df *DataFrameCandleCsv) SuperTrend(atrPeriod int, factor float64, account 
 
 	superTrend, _ := indicators.SuperTrend(atrPeriod, factor, h, l, c)
 
-	up := superTrend.UpperBand
-	low := superTrend.UpperBand
-	// st := superTrend.SuperTrend
+	// up := superTrend.UpperBand
+	// low := superTrend.UpperBand
+	st := superTrend.SuperTrend
 
 	// rsiValue := talib.Rsi(df.Closes(), 14)
 
@@ -49,7 +49,7 @@ func (df *DataFrameCandleCsv) SuperTrend(atrPeriod int, factor float64, account 
 			// fmt.Printf("Skipping iteration %d due to insufficient data.\n", i)
 			continue
 		}
-		if c[i-1] < up[i-1] && c[i] >= up[i] && !isBuyHolding {
+		if c[i-1] < st[i-1] && c[i] >= st[i] && !isBuyHolding {
 
 			accountBalance := account.GetBalance()
 			buySize = account.TradeSize(riskSize) / c[i]
@@ -61,7 +61,7 @@ func (df *DataFrameCandleCsv) SuperTrend(atrPeriod int, factor float64, account 
 
 			}
 		}
-		if c[i-1] > low[i-1] && c[i] <= low[i] || (c[i] <= buyPrice*slRatio) && isBuyHolding {
+		if c[i-1] > st[i-1] && c[i] <= st[i] || (c[i] <= buyPrice*slRatio) && isBuyHolding {
 			accountBalance := account.GetBalance()
 			if account.Sell(c[i]) {
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, t[i], c[i], buySize, accountBalance, false)
@@ -77,10 +77,10 @@ func (df *DataFrameCandleCsv) SuperTrend(atrPeriod int, factor float64, account 
 	return signalEvents
 }
 
-func (df *DataFrameCandleCsv) OptimizeST() (performance float64, bestAtrPeriod int, bestFactor float64) {
+func (df *DataFrameCandle) OptimizeST() (performance float64, bestAtrPeriod int, bestFactor float64) {
 	runtime.GOMAXPROCS(10)
-	bestAtrPeriod = 12
-	bestFactor = 21
+	bestAtrPeriod = 21
+	bestFactor = 3.0
 
 	limit := 1000
 	slots := make(chan struct{}, limit)
@@ -128,7 +128,7 @@ func (df *DataFrameCandleCsv) OptimizeST() (performance float64, bestAtrPeriod i
 				// 	return
 				// }
 
-				p := analytics.ProfitFactor(signalEvents)
+				p := analytics.SQN(signalEvents)
 				mu.Lock()
 				if performance == 0 || performance < p {
 					performance = p
@@ -145,7 +145,7 @@ func (df *DataFrameCandleCsv) OptimizeST() (performance float64, bestAtrPeriod i
 
 	wg.Wait()
 
-	fmt.Println("最高のプロフィットファクター", performance, "最適なATR", bestAtrPeriod, "最適なファクター", bestFactor)
+	fmt.Println("最高のSQN", performance, "最適なATR", bestAtrPeriod, "最適なファクター", bestFactor)
 
 	return performance, bestAtrPeriod, bestFactor
 }
@@ -170,7 +170,7 @@ func RunBacktestST() {
 
 	account := trader.NewAccount(1000)
 
-	df, _ := GetCsvDataFrame(assetName, duration, "2023-01", "2023-13")
+	df, _ := GetCandleData(assetName, duration)
 
 	performance, bestAtrPeriod, bestFactor := df.OptimizeST()
 

@@ -2,8 +2,8 @@
 
 
 
-assetName: "SOLUSDT"
+assetName: "TIAUSDT"
 
-duration: "30m"
+duration: "1h"
 
 limit: 17000

@@ -112,7 +112,7 @@ func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, 
 				// 	return
 				// }
 
-				p := analytics.ProfitFactor(signalEvents)
+				p := analytics.SQN(signalEvents)
 				mu.Lock()
 				if performance == 0 || performance < p {
 					performance = p

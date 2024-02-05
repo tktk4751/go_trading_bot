@@ -31,7 +31,7 @@ func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, a
 	buyPrice := 0.0
 	slRatio := 0.9
 
-	index := risk.ChoppySlice(df.Closes(), df.Highs(), df.Low())
+	index := risk.ChoppySlice(df.Closes(), df.Highs(), df.Lows())
 	choppyEma := risk.ChoppyEma(index, choppy)
 
 	isBuyHolding := false
@@ -83,7 +83,7 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 
 	for period1 := 3; period1 < 92; period1 += 3 {
 		for period2 := 5; period2 < 260; period2 += 3 {
-			for choppy := 8; choppy < 21; choppy += 1 {
+			for choppy := 5; choppy < 18; choppy += 1 {
 
 				wg.Add(1)
 				slots <- struct{}{}
@@ -97,7 +97,7 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 						return
 					}
 
-					if analytics.TotalTrades(signalEvents) < 3 {
+					if analytics.TotalTrades(signalEvents) < 20 {
 						<-slots
 						return
 					}
@@ -119,7 +119,7 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 					// 	return
 					// }
 
-					p := analytics.ProfitFactor(signalEvents)
+					p := analytics.SQN(signalEvents)
 					mu.Lock()
 					if performance == 0 || performance < p {
 						performance = p
@@ -139,7 +139,7 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 
 	wg.Wait()
 
-	fmt.Println("最高利益", performance, "最適な短期線", bestPeriod1, "最適な長期線", bestPeriod2, "最適なチョッピー", bestChoppy)
+	fmt.Println("最高パフォーマンス", performance, "最適な短期線", bestPeriod1, "最適な長期線", bestPeriod2, "最適なチョッピー", bestChoppy)
 
 	return performance, bestPeriod1, bestPeriod2, bestChoppy
 }

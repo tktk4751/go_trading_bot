@@ -88,10 +88,16 @@ func GetCsvDataFrame(assetName string, duration string, start, end string) (*Dat
 			// split the file name into parts
 			parts := strings.Split(file.Name(), "-")
 			// get the year and month from the file name
-			ym := fmt.Sprintf("%s-%s", parts[2], parts[3]) // ここを修正
-			// check if the year and month are within the start and end period
-			if ym >= start && ym <= end {
+			ym := fmt.Sprintf("%s-%s", parts[2], parts[3])
+			// check if the start and end are zero
+			if start == "0" && end == "0" {
+				// select all files
 				selected = append(selected, file.Name())
+			} else {
+				// check if the year and month are within the start and end period
+				if ym >= start && ym <= end {
+					selected = append(selected, file.Name())
+				}
 			}
 		}
 	}
@@ -241,7 +247,7 @@ func (df *DataFrameCandle) Highs() []float64 {
 	return s
 }
 
-func (df *DataFrameCandle) Low() []float64 {
+func (df *DataFrameCandle) Lows() []float64 {
 	s := make([]float64, len(df.Candles))
 	for i, candle := range df.Candles {
 		s[i] = candle.Low
@@ -358,11 +364,14 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("平均損失", analytics.AveregeLoss(s))
 	fmt.Println("ペイオフレシオ", analytics.PayOffRatio(s))
 	fmt.Println("ゲインペインレシオ", analytics.GainPainRatio(s))
+	fmt.Println("リターンドローダウンレシオ", analytics.ReturnDDRattio(s))
+	fmt.Println("SQN", analytics.SQN(s))
+	fmt.Println("期待値", analytics.ExpectedValue(s), "USD")
 	fmt.Println("勝ちトレードの平均バー数", analytics.AverageWinningHoldingBars(s))
 	fmt.Println("負けトレードの平均バー数", analytics.AverageLosingHoldingBars(s))
 	fmt.Printf("バイアンドホールドした時の利益: %f,  倍率: %f\n", profit, multiple)
 	fmt.Println("1トレードの最大損失と日時", ml, mt)
 	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
 
-	fmt.Println(s)
+	// fmt.Println(s)
 }
