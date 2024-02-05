@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"v1/pkg/analytics"
+	"v1/pkg/config"
 	"v1/pkg/data"
 	dbquery "v1/pkg/data/query"
 	"v1/pkg/execute"
@@ -321,6 +322,29 @@ func (df *DataFrameCandleCsv) Hlc3() []float64 {
 	return s
 }
 
+func RadyBacktest() (*DataFrameCandleCsv, *trader.Account, error) {
+
+	var err error
+
+	btcfg, err := config.Yaml()
+	if err != nil {
+		return &DataFrameCandleCsv{}, &trader.Account{}, nil
+	}
+	account := trader.NewAccount(1000)
+
+	assetName := btcfg.AssetName
+	duration := btcfg.Dration
+	start := btcfg.Start
+	end := btcfg.End
+
+	df, err := GetCsvDataFrame(assetName, duration, start, end)
+	if err != nil {
+		return &DataFrameCandleCsv{}, &trader.Account{}, err
+	}
+
+	return df, account, nil
+}
+
 func Result(s *execute.SignalEvents) {
 
 	if s == nil || len(s.Signals) == 0 {
@@ -345,7 +369,7 @@ func Result(s *execute.SignalEvents) {
 
 	fmt.Println("🌟", name, "🌟")
 	fmt.Println("初期残高", initialBalance)
-	fmt.Println("最終残高", l, lr)
+	fmt.Println("最終残高", l, "USD", lr, "倍")
 
 	fmt.Println("勝率", analytics.WinRate(s)*100, "%")
 	fmt.Println("総利益", analytics.Profit(s))
@@ -374,4 +398,6 @@ func Result(s *execute.SignalEvents) {
 	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
 
 	// fmt.Println(s)
+
+	fmt.Println("--------------------------------------------")
 }

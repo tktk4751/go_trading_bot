@@ -13,7 +13,7 @@ import (
 	"github.com/markcheno/go-talib"
 )
 
-func (df *DataFrameCandle) EmaStrategy(period1, period2 int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandleCsv) EmaStrategy(period1, period2 int, account *trader.Account) *execute.SignalEvents {
 
 	var StrategyName = "EMA"
 	lenCandles := len(df.Candles)
@@ -61,7 +61,7 @@ func (df *DataFrameCandle) EmaStrategy(period1, period2 int, account *trader.Acc
 	return signalEvents
 }
 
-func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, bestPeriod2 int) {
+func (df *DataFrameCandleCsv) OptimizeEma() (performance float64, bestPeriod1 int, bestPeriod2 int) {
 	runtime.GOMAXPROCS(10)
 	bestPeriod1 = 5
 	bestPeriod2 = 21
@@ -173,11 +173,12 @@ func RunBacktestEma() {
 
 	assetName := btcfg.AssetName
 	duration := btcfg.Dration
-	// limit := btcfg.Limit
+	start := btcfg.Start
+	end := btcfg.End
 
 	account := trader.NewAccount(1000)
 
-	df, _ := GetCandleData(assetName, duration)
+	df, _ := GetCsvDataFrame(assetName, duration, start, end)
 
 	performance, bestPeriod1, bestPeriod2 := df.OptimizeEma()
 

@@ -2,10 +2,8 @@ package strategey
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"v1/pkg/analytics"
-	"v1/pkg/config"
 	"v1/pkg/execute"
 	"v1/pkg/indicator/indicators"
 	"v1/pkg/management/risk"
@@ -16,7 +14,7 @@ import (
 // 	return "DBO"
 // }
 
-func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandleCsv) DonchainChoppyStrategy(period int, choppy int, account *trader.Account) *execute.SignalEvents {
 	var StrategyName = "DBO_CHOPPY"
 
 	lenCandles := len(df.Candles)
@@ -68,7 +66,7 @@ func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, accoun
 
 }
 
-func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64, bestPeriod int, bestChoppy int) {
+func (df *DataFrameCandleCsv) OptimizeDonchainChoppyGoroutin() (performance float64, bestPeriod int, bestChoppy int) {
 
 	bestPeriod = 40
 	bestChoppy = 13
@@ -81,7 +79,7 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 	limit := 1000
 	slots := make(chan struct{}, limit)
 
-	for period := 10; period < 250; period += 3 {
+	for period := 5; period < 100; period += 1 {
 		for choppy := 5; choppy < 18; choppy += 1 {
 			wg.Add(1)
 			slots <- struct{}{}
@@ -135,27 +133,9 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 	return performance, bestPeriod, bestChoppy
 }
 
-func RunBacktestDonchainChoppy() {
+func RunDonchainOptimize() {
 
-	var err error
-
-	// account := trader.NewAccount(1000)
-	btcfg, err := config.Yaml()
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-
-	fmt.Println("--------------------------------------------")
-
-	// strategyName := getStrageyNameDonchain()
-	assetName := btcfg.AssetName
-	duration := btcfg.Dration
-
-	// limit := btcfg.Limit
-
-	account := trader.NewAccount(1000)
-
-	df, _ := GetCandleData(assetName, duration)
+	df, account, _ := RadyBacktest()
 
 	p, bestPeriod, bestChoppy := df.OptimizeDonchainChoppyGoroutin()
 
@@ -166,4 +146,12 @@ func RunBacktestDonchainChoppy() {
 
 	}
 
+}
+
+func DonchainBacktest() {
+
+	df, account, _ := RadyBacktest()
+
+	df.Signal = df.DonchainChoppyStrategy(40, 13, account)
+	Result(df.Signal)
 }

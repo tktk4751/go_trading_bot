@@ -12,7 +12,7 @@ import (
 	"v1/pkg/trader"
 )
 
-func (df *DataFrameCandle) SuperTrend(atrPeriod int, factor float64, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandleCsv) SuperTrend(atrPeriod int, factor float64, account *trader.Account) *execute.SignalEvents {
 
 	var StrategyName = "SUPERTREND"
 	// var err error
@@ -77,7 +77,7 @@ func (df *DataFrameCandle) SuperTrend(atrPeriod int, factor float64, account *tr
 	return signalEvents
 }
 
-func (df *DataFrameCandle) OptimizeST() (performance float64, bestAtrPeriod int, bestFactor float64) {
+func (df *DataFrameCandleCsv) OptimizeST() (performance float64, bestAtrPeriod int, bestFactor float64) {
 	runtime.GOMAXPROCS(10)
 	bestAtrPeriod = 21
 	bestFactor = 3.0
@@ -162,15 +162,14 @@ func RunBacktestST() {
 
 	fmt.Println("--------------------------------------------")
 
-	// strategyName := getStrageyNameDonchain()
 	assetName := btcfg.AssetName
 	duration := btcfg.Dration
-
-	// limit := btcfg.Limit
+	start := btcfg.Start
+	end := btcfg.End
 
 	account := trader.NewAccount(1000)
 
-	df, _ := GetCandleData(assetName, duration)
+	df, _ := GetCsvDataFrame(assetName, duration, start, end)
 
 	performance, bestAtrPeriod, bestFactor := df.OptimizeST()
 

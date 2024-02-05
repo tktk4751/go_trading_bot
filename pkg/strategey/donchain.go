@@ -15,7 +15,7 @@ import (
 // 	return "DBO"
 // }
 
-func (df *DataFrameCandle) DonchainStrategy(period int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandleCsv) DonchainStrategy(period int, account *trader.Account) *execute.SignalEvents {
 	var StrategyName = "DBO"
 
 	lenCandles := len(df.Candles)
@@ -63,7 +63,7 @@ func (df *DataFrameCandle) DonchainStrategy(period int, account *trader.Account)
 	return signalEvents
 
 }
-func (df *DataFrameCandle) OptimizeDonchainGoroutin() (performance float64, bestPeriod int) {
+func (df *DataFrameCandleCsv) OptimizeDonchainGoroutin() (performance float64, bestPeriod int) {
 
 	bestPeriod = 40
 	var mu sync.Mutex
@@ -128,15 +128,14 @@ func RunBacktestDonchain() {
 
 	fmt.Println("--------------------------------------------")
 
-	// strategyName := getStrageyNameDonchain()
 	assetName := btcfg.AssetName
 	duration := btcfg.Dration
-
-	// limit := btcfg.Limit
+	start := btcfg.Start
+	end := btcfg.End
 
 	account := trader.NewAccount(1000)
 
-	df, _ := GetCandleData(assetName, duration)
+	df, _ := GetCsvDataFrame(assetName, duration, start, end)
 
 	performancePayOffRatio, bestPayOffRatioPeriod := df.OptimizeDonchainGoroutin()
 

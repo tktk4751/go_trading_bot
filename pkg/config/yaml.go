@@ -11,7 +11,8 @@ var data = "config.yml"
 type Config struct {
 	AssetName string `yaml:"assetName"`
 	Dration   string `yaml:"duration"`
-	Limit     int    `yaml:"limit"`
+	Start     string `yaml:"start"`
+	End       string `yaml:"end"`
 }
 
 func Yaml() (Config, error) {

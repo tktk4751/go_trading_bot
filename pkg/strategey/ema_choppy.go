@@ -2,11 +2,9 @@ package strategey
 
 import (
 	"fmt"
-	"log"
 	"runtime"
 	"sync"
 	"v1/pkg/analytics"
-	"v1/pkg/config"
 	"v1/pkg/execute"
 	"v1/pkg/management/risk"
 	"v1/pkg/trader"
@@ -14,7 +12,7 @@ import (
 	"github.com/markcheno/go-talib"
 )
 
-func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandleCsv) EmaChoppyStrategy(period1, period2 int, choppy int, account *trader.Account) *execute.SignalEvents {
 
 	var StrategyName = "EMA_CHOPPY"
 	lenCandles := len(df.Candles)
@@ -66,7 +64,7 @@ func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, a
 	return signalEvents
 }
 
-func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1 int, bestPeriod2 int, bestChoppy int) {
+func (df *DataFrameCandleCsv) OptimizeEmaChoppy() (performance float64, bestPeriod1 int, bestPeriod2 int, bestChoppy int) {
 	runtime.GOMAXPROCS(10)
 	bestPeriod1 = 5
 	bestPeriod2 = 21
@@ -81,8 +79,8 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	for period1 := 3; period1 < 92; period1 += 3 {
-		for period2 := 5; period2 < 260; period2 += 3 {
+	for period1 := 1; period1 < 34; period1 += 2 {
+		for period2 := 5; period2 < 250; period2 += 3 {
 			for choppy := 5; choppy < 18; choppy += 1 {
 
 				wg.Add(1)
@@ -144,25 +142,9 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 	return performance, bestPeriod1, bestPeriod2, bestChoppy
 }
 
-func RunBacktestEmaChoppy() {
+func RunEmaOptimize() {
 
-	var err error
-
-	// account := trader.NewAccount(1000)
-	btcfg, err := config.Yaml()
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-
-	fmt.Println("--------------------------------------------")
-
-	assetName := btcfg.AssetName
-	duration := btcfg.Dration
-	// limit := btcfg.Limit
-
-	account := trader.NewAccount(1000)
-
-	df, _ := GetCandleData(assetName, duration)
+	df, account, _ := RadyBacktest()
 
 	performance, bestPeriod1, bestPeriod2, bestChoppy := df.OptimizeEmaChoppy()
 
@@ -172,5 +154,14 @@ func RunBacktestEmaChoppy() {
 		Result(df.Signal)
 
 	}
+
+}
+
+func EmaBacktest() {
+
+	df, account, _ := RadyBacktest()
+
+	df.Signal = df.EmaChoppyStrategy(5, 21, 12, account)
+	Result(df.Signal)
 
 }

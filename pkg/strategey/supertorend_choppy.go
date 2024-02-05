@@ -2,18 +2,16 @@ package strategey
 
 import (
 	"fmt"
-	"log"
 	"runtime"
 	"sync"
 	"v1/pkg/analytics"
-	"v1/pkg/config"
 	"v1/pkg/execute"
 	"v1/pkg/indicator/indicators"
 	"v1/pkg/management/risk"
 	"v1/pkg/trader"
 )
 
-func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float64, choppy int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandleCsv) SuperTrendChoppyStrategy(atrPeriod int, factor float64, choppy int, account *trader.Account) *execute.SignalEvents {
 
 	var StrategyName = "SUPERTREND_CHOPPY"
 	// var err error
@@ -81,7 +79,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 	return signalEvents
 }
 
-func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPeriod int, bestFactor float64, bestChoppy int) {
+func (df *DataFrameCandleCsv) OptimizeSuperTrend() (performance float64, bestAtrPeriod int, bestFactor float64, bestChoppy int) {
 	runtime.GOMAXPROCS(10)
 	bestAtrPeriod = 21
 	bestFactor = 3.0
@@ -161,25 +159,7 @@ func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPer
 
 func RunBacktestSuperTrend() {
 
-	var err error
-
-	// account := trader.NewAccount(1000)
-	btcfg, err := config.Yaml()
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-
-	fmt.Println("--------------------------------------------")
-
-	// strategyName := getStrageyNameDonchain()
-	assetName := btcfg.AssetName
-	duration := btcfg.Dration
-
-	// limit := btcfg.Limit
-
-	account := trader.NewAccount(1000)
-
-	df, _ := GetCandleData(assetName, duration)
+	df, account, _ := RadyBacktest()
 
 	performance, bestAtrPeriod, bestFactor, bestChoppy := df.OptimizeSuperTrend()
 
@@ -189,5 +169,14 @@ func RunBacktestSuperTrend() {
 		Result(df.Signal)
 
 	}
+
+}
+
+func SuperTrendBacktest() {
+
+	df, account, _ := RadyBacktest()
+
+	df.Signal = df.SuperTrendChoppyStrategy(21, 3.0, 13, account)
+	Result(df.Signal)
 
 }

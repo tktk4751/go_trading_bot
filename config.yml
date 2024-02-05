@@ -1,9 +1,8 @@
 
 
 
-
-assetName: "LINKUSDT"
-
+#バックテストの基本設定 startとendの月は必ず二桁になるように｡
+assetName: "SOLUSDT"
 duration: "15m"
-
-limit: 17000
+start: "2021-04"
+end: "2022-011"
