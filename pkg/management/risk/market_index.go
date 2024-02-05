@@ -30,7 +30,11 @@ func ChoppySlice(close []float64, high []float64, low []float64) []float64 {
 
 	var choppySlice []float64
 
-	for i := 30; i < len(close); i++ {
+	for i := 1; i < len(close); i++ {
+
+		if i < 30 {
+			continue
+		}
 
 		// iが30以上のときだけChoppyIndexの計算を行う
 

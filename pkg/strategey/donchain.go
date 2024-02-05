@@ -69,8 +69,8 @@ func (df *DataFrameCandle) OptimizeDonchainGoroutin() (performance float64, best
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	a := trader.NewAccount(1000)
-	marketDefault, _ := BuyAndHoldingStrategy(a)
+	// a := trader.NewAccount(1000)
+	// marketDefault, _ := BuyAndHoldingStrategy(a)
 
 	for period := 10; period < 333; period++ {
 		wg.Add(1)
@@ -87,9 +87,9 @@ func (df *DataFrameCandle) OptimizeDonchainGoroutin() (performance float64, best
 				return
 			}
 
-			if analytics.NetProfit(signalEvents) < marketDefault {
-				return
-			}
+			// if analytics.NetProfit(signalEvents) < marketDefault {
+			// 	return
+			// }
 
 			// if analytics.WinRate(signalEvents) < 0.45 {
 			// 	return

@@ -75,8 +75,8 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	a := trader.NewAccount(1000)
-	marketDefault, _ := BuyAndHoldingStrategy(a)
+	// a := trader.NewAccount(1000)
+	// marketDefault, _ := BuyAndHoldingStrategy(a)
 
 	limit := 1000
 	slots := make(chan struct{}, limit)
@@ -95,15 +95,15 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 					return
 				}
 
-				if analytics.TotalTrades(signalEvents) < 3 {
+				if analytics.TotalTrades(signalEvents) < 5 {
 					<-slots
 					return
 				}
 
-				if analytics.NetProfit(signalEvents) < marketDefault {
-					// <-slots
-					return
-				}
+				// if analytics.NetProfit(signalEvents) < marketDefault {
+				// 	// <-slots
+				// 	return
+				// }
 
 				// if analytics.WinRate(signalEvents) < 0.45 {
 				// <-slots
@@ -130,7 +130,7 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 
 	wg.Wait()
 
-	fmt.Println("最高利益", performance, "最適なピリオド", bestPeriod, "最適なチョッピー", bestChoppy)
+	fmt.Println("最高SQN", performance, "最適なピリオド", bestPeriod, "最適なチョッピー", bestChoppy)
 
 	return performance, bestPeriod, bestChoppy
 }

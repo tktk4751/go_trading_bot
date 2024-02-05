@@ -47,7 +47,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 
 	isBuyHolding := false
 
-	for i := 1; i < lenCandles; i++ {
+	for i := 1; i < len(choppyEma); i++ {
 
 		if i < atrPeriod {
 			// fmt.Printf("Skipping iteration %d due to insufficient data.\n", i)
@@ -90,8 +90,8 @@ func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPer
 	limit := 1000
 	slots := make(chan struct{}, limit)
 
-	a := trader.NewAccount(1000)
-	marketDefault, _ := BuyAndHoldingStrategy(a)
+	// a := trader.NewAccount(1000)
+	// marketDefault, _ := BuyAndHoldingStrategy(a)
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -117,10 +117,10 @@ func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPer
 						return
 					}
 
-					if analytics.NetProfit(signalEvents) < marketDefault {
-						<-slots
-						return
-					}
+					// if analytics.NetProfit(signalEvents) < marketDefault {
+					// 	<-slots
+					// 	return
+					// }
 
 					// if analytics.WinRate(signalEvents) < 0.50 {
 					// <-slots

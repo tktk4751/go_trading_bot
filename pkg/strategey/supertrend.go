@@ -106,7 +106,7 @@ func (df *DataFrameCandle) OptimizeST() (performance float64, bestAtrPeriod int,
 					return
 				}
 
-				if analytics.TotalTrades(signalEvents) < 3 {
+				if analytics.TotalTrades(signalEvents) < 5 {
 					<-slots
 					return
 				}

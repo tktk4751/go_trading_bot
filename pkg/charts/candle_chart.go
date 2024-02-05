@@ -330,35 +330,35 @@ func klineWithSuperTrend() *charts.Kline {
 
 	st, _ := indicators.SuperTrend(21, 3.0, h, l, c)
 
-	stLineData := make([]opts.LineData, len(st.SuperTrend))
+	// stLineData := make([]opts.LineData, len(st.SuperTrend))
+	// for i, v := range st.SuperTrend {
+	// 	stLineData[i] = opts.LineData{Value: v}
+	// }
+
+	// stLine := charts.NewLine()
+	// stLine.SetXAxis(x).AddSeries("st", stLineData)
+
+	// kline.Overlap(stLine)
+
+	stupLineData := make([]opts.LineData, len(st.UpperBand))
 	for i, v := range st.SuperTrend {
-		stLineData[i] = opts.LineData{Value: v}
+		stupLineData[i] = opts.LineData{Value: v}
 	}
 
-	stLine := charts.NewLine()
-	stLine.SetXAxis(x).AddSeries("st", stLineData)
+	stLineHigh := charts.NewLine()
+	stLineHigh.SetXAxis(x).AddSeries("st", stupLineData)
 
-	kline.Overlap(stLine)
+	kline.Overlap(stLineHigh)
 
-	// stupLineData := make([]opts.LineData, len(st.UpperBand))
-	// for i, v := range st.SuperTrend {
-	// 	stupLineData[i] = opts.LineData{Value: v}
-	// }
+	stlowLineData := make([]opts.LineData, len(st.LowerBand))
+	for i, v := range st.SuperTrend {
+		stlowLineData[i] = opts.LineData{Value: v}
+	}
 
-	// stLineHigh := charts.NewLine()
-	// stLineHigh.SetXAxis(x).AddSeries("st", stupLineData)
+	stLineLow := charts.NewLine()
+	stLineLow.SetXAxis(x).AddSeries("st", stlowLineData)
 
-	// kline.Overlap(stLineHigh)
-
-	// stlowLineData := make([]opts.LineData, len(st.LowerBand))
-	// for i, v := range st.SuperTrend {
-	// 	stlowLineData[i] = opts.LineData{Value: v}
-	// }
-
-	// stLineLow := charts.NewLine()
-	// stLineLow.SetXAxis(x).AddSeries("st", stlowLineData)
-
-	// kline.Overlap(stLineLow)
+	kline.Overlap(stLineLow)
 
 	kline.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{

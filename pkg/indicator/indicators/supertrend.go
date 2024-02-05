@@ -38,7 +38,8 @@ func SuperTrend(atrPeriod int, factor float64, high, low, close []float64) (Supe
 	atr := make([]float64, len(high))
 	for i := range high {
 		if i < atrPeriod {
-			atr[i] = math.NaN()
+			// Initialize atr[i] with the first TR value instead of NaN
+			atr[i] = tr1[0]
 		} else {
 			sum := 0.0
 			for j := i - atrPeriod + 1; j <= i; j++ {
@@ -48,7 +49,6 @@ func SuperTrend(atrPeriod int, factor float64, high, low, close []float64) (Supe
 			atr[i] = sum / float64(atrPeriod)
 		}
 	}
-
 	hl2 := make([]float64, len(high))
 	for i := range high {
 		hl2[i] = (high[i] + low[i]) / 2
@@ -57,42 +57,34 @@ func SuperTrend(atrPeriod int, factor float64, high, low, close []float64) (Supe
 	}
 
 	isUpTrend := make([]bool, len(high)) // ここを変更しました
-	prevUpperBand := upperBand[0]
-	prevLowerBand := lowerBand[0]
-
 	for i := range high {
+		current := i
+		previous := i - 1
 		if i == 0 {
-			superTrend[i] = hl2[i]
-			isUpTrend[i] = true
+			previous = 0
+		}
+
+		if close[current] > upperBand[previous] { // If the current close is above the previous upper band, then it is an uptrend
+			isUpTrend[current] = true
+		} else if close[current] < lowerBand[previous] { // If the current close is below the previous lower band, then it is a downtrend
+			isUpTrend[current] = false
+		} else { // Otherwise, the trend is the same as the previous one
+			isUpTrend[current] = isUpTrend[previous]
+
+			if isUpTrend[current] && lowerBand[current] < lowerBand[previous] { // If it is an uptrend and the current lower band is below the previous lower band, then use the previous lower band
+				lowerBand[current] = lowerBand[previous]
+			} else if !isUpTrend[current] && upperBand[current] > upperBand[previous] { // If it is a downtrend and the current upper band is above the previous upper band, then use the previous upper band
+				upperBand[current] = upperBand[previous]
+			}
+		}
+
+		// If it is an uptrend, use the lower band as the super trend, otherwise use the upper band
+		if isUpTrend[current] {
+			superTrend[current] = lowerBand[current]
+			upperBand[current] = math.NaN() // Hide the upper band in an uptrend
 		} else {
-			if close[i] > prevUpperBand {
-				isUpTrend[i] = true
-			} else if close[i] < prevLowerBand {
-				isUpTrend[i] = false
-			} else {
-				isUpTrend[i] = isUpTrend[i-1]
-			}
-
-			if isUpTrend[i] {
-				superTrend[i] = lowerBand[i]
-				if close[i] <= prevUpperBand {
-					upperBand[i] = prevUpperBand
-				} else {
-					upperBand[i] = hl2[i] + (factor * atr[i])
-				}
-				lowerBand[i] = hl2[i] - (factor * atr[i])
-			} else {
-				superTrend[i] = upperBand[i]
-				upperBand[i] = hl2[i] + (factor * atr[i])
-				if close[i] >= prevLowerBand {
-					lowerBand[i] = prevLowerBand
-				} else {
-					lowerBand[i] = hl2[i] - (factor * atr[i])
-				}
-			}
-
-			prevUpperBand = upperBand[i]
-			prevLowerBand = lowerBand[i]
+			superTrend[current] = upperBand[current]
+			lowerBand[current] = math.NaN() // Hide the lower band in a downtrend
 		}
 	}
 
