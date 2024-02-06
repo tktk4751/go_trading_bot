@@ -15,7 +15,7 @@ import (
 // 	return "DBO"
 // }
 
-func (df *DataFrameCandleCsv) DonchainStrategy(period int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandle) DonchainStrategy(period int, account *trader.Account) *execute.SignalEvents {
 	var StrategyName = "DBO"
 
 	lenCandles := len(df.Candles)
@@ -63,7 +63,7 @@ func (df *DataFrameCandleCsv) DonchainStrategy(period int, account *trader.Accou
 	return signalEvents
 
 }
-func (df *DataFrameCandleCsv) OptimizeDonchainGoroutin() (performance float64, bestPeriod int) {
+func (df *DataFrameCandle) OptimizeDonchainGoroutin() (performance float64, bestPeriod int) {
 
 	bestPeriod = 40
 	var mu sync.Mutex

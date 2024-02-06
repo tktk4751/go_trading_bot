@@ -12,7 +12,7 @@ import (
 	"v1/pkg/trader"
 )
 
-func (df *DataFrameCandleCsv) SuperTrend(atrPeriod int, factor float64, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandle) SuperTrend(atrPeriod int, factor float64, account *trader.Account) *execute.SignalEvents {
 
 	var StrategyName = "SUPERTREND"
 	// var err error
@@ -61,7 +61,7 @@ func (df *DataFrameCandleCsv) SuperTrend(atrPeriod int, factor float64, account 
 
 			}
 		}
-		if c[i-1] > st[i-1] && c[i] <= st[i] || (c[i] <= buyPrice*slRatio) && isBuyHolding {
+		if (c[i-1] > st[i-1] && c[i] <= st[i] || (c[i] <= buyPrice*slRatio)) && isBuyHolding {
 			accountBalance := account.GetBalance()
 			if account.Sell(c[i]) {
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, t[i], c[i], buySize, accountBalance, false)
@@ -77,7 +77,7 @@ func (df *DataFrameCandleCsv) SuperTrend(atrPeriod int, factor float64, account 
 	return signalEvents
 }
 
-func (df *DataFrameCandleCsv) OptimizeST() (performance float64, bestAtrPeriod int, bestFactor float64) {
+func (df *DataFrameCandle) OptimizeST() (performance float64, bestAtrPeriod int, bestFactor float64) {
 	runtime.GOMAXPROCS(10)
 	bestAtrPeriod = 21
 	bestFactor = 3.0
@@ -122,13 +122,13 @@ func (df *DataFrameCandleCsv) OptimizeST() (performance float64, bestAtrPeriod i
 				// 	return
 				// }
 
-				// if analytics.PayOffRatio(signalEvents) < 1 {
-				// <-slots
+				if analytics.SQN(signalEvents) < 3.2 {
+					<-slots
 
-				// 	return
-				// }
+					return
+				}
 
-				p := analytics.SQN(signalEvents)
+				p := analytics.NetProfit(signalEvents)
 				mu.Lock()
 				if performance == 0 || performance < p {
 					performance = p
@@ -145,8 +145,7 @@ func (df *DataFrameCandleCsv) OptimizeST() (performance float64, bestAtrPeriod i
 
 	wg.Wait()
 
-	fmt.Println("最高のSQN", performance, "最適なATR", bestAtrPeriod, "最適なファクター", bestFactor)
-
+	fmt.Println("最高パフォーマンス", performance, "最適なATR", bestAtrPeriod, "最適なファクター", bestFactor)
 	return performance, bestAtrPeriod, bestFactor
 }
 

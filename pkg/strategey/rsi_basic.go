@@ -2,22 +2,16 @@ package strategey
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"runtime"
 	"sync"
 	"v1/pkg/analytics"
-	"v1/pkg/config"
 	"v1/pkg/execute"
 
 	"v1/pkg/trader"
 
 	"github.com/markcheno/go-talib"
 )
-
-func getStrageyNameRSI() string {
-	return "RSI"
-}
 
 func (df *DataFrameCandle) RsiStrategy(period int, buyThread float64, sellThread float64, account *trader.Account) *execute.SignalEvents {
 
@@ -198,31 +192,7 @@ func (df *DataFrameCandle) OptimizeRsiDrawDownGoroutin() (performance float64, b
 
 func RunBacktestRsi() {
 
-	var err error
-
-	// account := trader.NewAccount(1000)
-	btcfg, err := config.Yaml()
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-
-	fmt.Println(btcfg.AssetName)
-
-	strategyName := getStrageyNameRSI()
-	assetName := btcfg.AssetName
-	duration := btcfg.Dration
-	// limit := btcfg.Limit
-
-	account := trader.NewAccount(1000)
-
-	df, _ := GetCandleData(assetName, duration)
-
-	tableName := strategyName + "_" + assetName + "_" + duration
-
-	_, err = execute.CreateDBTable(tableName)
-	if err != nil {
-		log.Fatal(err)
-	}
+	df, account, _ := RadyBacktest()
 
 	performance, bestPeriod, bestBuyThread, bestSellThread := df.OptimizeRsi()
 

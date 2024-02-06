@@ -2,20 +2,14 @@ package strategey
 
 import (
 	"fmt"
-	"log"
 	"runtime"
 	"sync"
 	"v1/pkg/analytics"
-	"v1/pkg/config"
 	"v1/pkg/execute"
 	"v1/pkg/trader"
 
 	"github.com/markcheno/go-talib"
 )
-
-func getStrageyNameBb() string {
-	return "BB"
-}
 
 func (df *DataFrameCandle) BbStrategy(n int, k float64, account *trader.Account) *execute.SignalEvents {
 
@@ -57,9 +51,9 @@ func (df *DataFrameCandle) OptimizeBbGoroutin() (performance float64, bestN int,
 	bestN = 20
 	bestK = 2.0
 
-	a := trader.NewAccount(1000)
+	// a := trader.NewAccount(1000)
 
-	marketDefault, _ := BuyAndHoldingStrategy(a)
+	// marketDefault, _ := BuyAndHoldingStrategy(a)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
@@ -80,9 +74,9 @@ func (df *DataFrameCandle) OptimizeBbGoroutin() (performance float64, bestN int,
 					return
 				}
 
-				if analytics.NetProfit(signalEvents) < marketDefault {
-					return
-				}
+				// if analytics.NetProfit(signalEvents) < marketDefault {
+				// 	return
+				// }
 
 				// if analytics.WinRate(signalEvents) < 0.50 {
 				// 	return
@@ -114,23 +108,7 @@ func (df *DataFrameCandle) OptimizeBbGoroutin() (performance float64, bestN int,
 }
 func RunBacktestBb() {
 
-	var err error
-
-	// account := trader.NewAccount(1000)
-	btcfg, err := config.Yaml()
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-
-	fmt.Println(btcfg.AssetName)
-
-	assetName := btcfg.AssetName
-	duration := btcfg.Dration
-	// limit := btcfg.Limit
-
-	account := trader.NewAccount(1000)
-
-	df, _ := GetCandleData(assetName, duration)
+	df, account, _ := RadyBacktest()
 
 	performance, bestN, bestK := df.OptimizeBbGoroutin()
 

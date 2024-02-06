@@ -10,10 +10,20 @@ func main() {
 
 	start := time.Now()
 
-	strategey.RunEmaOptimize()
-	// strategey.RunBacktestDonchainChoppy()
-	// strategey.RunBacktestSuperTrend()
+	// strategey.RunEmaOptimize()
+	// strategey.RunSTOptimize()
+	// strategey.RunDonchainOptimize()
 
+	// strategey.DonchainBacktest()
+	// strategey.SuperTrendBacktest()
+	// strategey.EmaBacktest()
+	// strategey.RunBacktestST()
+	// strategey.RunRsi2Optimize()
+
+	strategey.RunBacktestMacd()
+
+	// strategey.RunBacktestMacd()
+	// strategey.EmaBacktest()
 	// assetName := "TIAUSDT"
 	// duration := "4h"
 

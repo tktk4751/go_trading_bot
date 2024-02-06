@@ -196,3 +196,55 @@ func AverageLosingHoldingBars(s *execute.SignalEvents) float64 {
 	}
 	return float64(totalBars) / float64(losingTrades)
 }
+
+func MaxWinCount(s *execute.SignalEvents) int {
+	if s == nil {
+		return 0
+	}
+	var maxWinStreak, winStreak int
+	var buyPrice float64
+
+	for _, signal := range s.Signals {
+		if signal.Side == "BUY" {
+			buyPrice = signal.Price
+		} else if signal.Side == "SELL" && buyPrice != 0 {
+			if signal.Price > buyPrice {
+				winStreak++
+				if winStreak > maxWinStreak {
+					maxWinStreak = winStreak
+				}
+			} else {
+				winStreak = 0
+			}
+			buyPrice = 0 // Reset buy price after a sell
+		}
+	}
+
+	return maxWinStreak
+}
+
+func MaxLoseCount(s *execute.SignalEvents) int {
+	if s == nil {
+		return 0
+	}
+	var maxLoseStreak, loseStreak int
+	var buyPrice float64
+
+	for _, signal := range s.Signals {
+		if signal.Side == "BUY" {
+			buyPrice = signal.Price
+		} else if signal.Side == "SELL" && buyPrice != 0 {
+			if signal.Price < buyPrice {
+				loseStreak++
+				if loseStreak > maxLoseStreak {
+					maxLoseStreak = loseStreak
+				}
+			} else {
+				loseStreak = 0
+			}
+			buyPrice = 0 // Reset buy price after a sell
+		}
+	}
+
+	return maxLoseStreak
+}

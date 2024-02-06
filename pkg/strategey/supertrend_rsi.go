@@ -9,11 +9,13 @@ import (
 	"v1/pkg/indicator/indicators"
 	"v1/pkg/management/risk"
 	"v1/pkg/trader"
+
+	"github.com/markcheno/go-talib"
 )
 
-func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float64, choppy int, duration int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandle) SuperTrendRSI(atrPeriod int, factor float64, choppy int, duration int, account *trader.Account) *execute.SignalEvents {
 
-	var StrategyName = "SUPERTREND_CHOPPY"
+	var StrategyName = "SUPERTREND_RSI"
 	// var err error
 
 	lenCandles := len(df.Candles)
@@ -27,7 +29,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 	h := df.Highs()
 	l := df.Lows()
 	c := df.Closes()
-	// hlc3 := df.Hlc3()
+	hlc3 := df.Hlc3()
 
 	superTrend, _ := indicators.SuperTrend(atrPeriod, factor, h, l, c)
 
@@ -35,7 +37,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 	// stLow := superTrend.UpperBand
 	st := superTrend.SuperTrend
 
-	// rsi := talib.Rsi(hlc3, 14)
+	rsi := talib.Rsi(hlc3, 14)
 
 	buySize := 0.0
 	buyPrice := 0.0
@@ -52,7 +54,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 			// fmt.Printf("Skipping iteration %d due to insufficient data.\n", i)
 			continue
 		}
-		if (c[i-1] < st[i-1] && c[i] >= st[i]) && choppyEma[i] > 50 && !isBuyHolding {
+		if (c[i-1] < st[i-1] && c[i] >= st[i] || rsi[i-1] < 20 && rsi[i] >= 20) && choppyEma[i] > 50 && !isBuyHolding {
 
 			accountBalance := account.GetBalance()
 			buySize = account.TradeSize(riskSize) / c[i]
@@ -78,7 +80,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 	return signalEvents
 }
 
-func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPeriod int, bestFactor float64, bestChoppy int, bestDuration int) {
+func (df *DataFrameCandle) OptimizeSuperTrendRSI() (performance float64, bestAtrPeriod int, bestFactor float64, bestChoppy int, bestDuration int) {
 	runtime.GOMAXPROCS(10)
 	bestAtrPeriod = 21
 	bestFactor = 3.0
@@ -105,7 +107,7 @@ func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPer
 					go func(atrPeriod int, factor float64, choppy int, duration int) {
 						defer wg.Done()
 						account := trader.NewAccount(1000) // Move this line inside the goroutine
-						signalEvents := df.SuperTrendChoppyStrategy(atrPeriod, factor, choppy, duration, account)
+						signalEvents := df.SuperTrendRSI(atrPeriod, factor, choppy, duration, account)
 
 						if signalEvents == nil {
 							return
@@ -159,26 +161,26 @@ func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPer
 	return performance, bestAtrPeriod, bestFactor, bestChoppy, bestDuration
 }
 
-func RunSTOptimize() {
+func RunSTRSIOptimize() {
 
 	df, account, _ := RadyBacktest()
 
-	performance, bestAtrPeriod, bestFactor, bestChoppy, bestDuration := df.OptimizeSuperTrend()
+	performance, bestAtrPeriod, bestFactor, bestChoppy, bestDuration := df.OptimizeSuperTrendRSI()
 
 	if performance > 0 {
 
-		df.Signal = df.SuperTrendChoppyStrategy(bestAtrPeriod, bestFactor, bestChoppy, bestDuration, account)
+		df.Signal = df.SuperTrendRSI(bestAtrPeriod, bestFactor, bestChoppy, bestDuration, account)
 		Result(df.Signal)
 
 	}
 
 }
 
-func SuperTrendBacktest() {
+func SuperTrendRSIBacktest() {
 
 	df, account, _ := RadyBacktest()
 
-	df.Signal = df.SuperTrendChoppyStrategy(7, 2.5, 11, 30, account)
+	df.Signal = df.SuperTrendChoppyStrategy(13, 5.0, 8, 20, account)
 	Result(df.Signal)
 
 }

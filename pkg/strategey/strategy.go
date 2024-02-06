@@ -23,14 +23,14 @@ import (
 var initialBalance float64 = 1000.00
 var riskSize float64 = 0.9
 
-type DataFrameCandleCsv struct {
+type DataFrameCandle struct {
 	AssetName string
 	Duration  string
 	Candles   []data.Candle
 	Signal    *execute.SignalEvents
 }
 
-type DataFrameCandle struct {
+type DataFrameCandleCsv struct {
 	AssetName string
 	Duration  string
 	Candles   []data.Candle
@@ -71,7 +71,7 @@ type Strategy struct {
 	Arbitrage    bool
 }
 
-func GetCsvDataFrame(assetName string, duration string, start, end string) (*DataFrameCandleCsv, error) {
+func GetCsvDataFrame(assetName string, duration string, start, end string) (*DataFrameCandle, error) {
 	// get the list of csv files from the directory
 	dir := fmt.Sprintf("pkg/data/spot/monthly/klines/%s/%s", assetName, duration)
 	files, err := os.ReadDir(dir)
@@ -170,8 +170,8 @@ func GetCsvDataFrame(assetName string, duration string, start, end string) (*Dat
 		candles = append(candles, candle)
 	}
 
-	// create a DataFrameCandleCsv from the slice of data.Candle
-	dfCandle := &DataFrameCandleCsv{
+	// create a DataFrameCandle from the slice of data.Candle
+	dfCandle := &DataFrameCandle{
 		AssetName: assetName,
 		Duration:  duration,
 		Candles:   candles,
@@ -180,7 +180,7 @@ func GetCsvDataFrame(assetName string, duration string, start, end string) (*Dat
 	return dfCandle, nil
 }
 
-func GetCandleData(assetName string, duration string) (*DataFrameCandle, error) {
+func GetCandleData(assetName string, duration string, start string, end string) (*DataFrameCandle, error) {
 
 	db, err := sql.Open("sqlite3", "db/kline.db")
 	if err != nil {
@@ -188,7 +188,16 @@ func GetCandleData(assetName string, duration string) (*DataFrameCandle, error) 
 	}
 	defer db.Close()
 
-	query := fmt.Sprintf("SELECT * FROM %s_%s", assetName, duration)
+	var query string
+	if strings.TrimSpace(start) != "" && strings.TrimSpace(end) != "" {
+		// startとendが空文字でない場合は、WHERE句を追加する
+		startTime, _ := time.Parse("20060102", start)
+		endTime, _ := time.Parse("20060102", end)
+		query = fmt.Sprintf("SELECT * FROM %s_%s WHERE date BETWEEN '%s' AND '%s'", assetName, duration, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
+	} else {
+		// startとendが空文字の場合は、WHERE句を追加しない
+		query = fmt.Sprintf("SELECT * FROM %s_%s", assetName, duration)
+	}
 	rows, err := db.Query(query)
 	if err != nil {
 		log.Fatal(err)
@@ -322,13 +331,13 @@ func (df *DataFrameCandleCsv) Hlc3() []float64 {
 	return s
 }
 
-func RadyBacktest() (*DataFrameCandleCsv, *trader.Account, error) {
+func RadyBacktest() (*DataFrameCandle, *trader.Account, error) {
 
 	var err error
 
 	btcfg, err := config.Yaml()
 	if err != nil {
-		return &DataFrameCandleCsv{}, &trader.Account{}, nil
+		return &DataFrameCandle{}, &trader.Account{}, nil
 	}
 	account := trader.NewAccount(1000)
 
@@ -337,9 +346,9 @@ func RadyBacktest() (*DataFrameCandleCsv, *trader.Account, error) {
 	start := btcfg.Start
 	end := btcfg.End
 
-	df, err := GetCsvDataFrame(assetName, duration, start, end)
+	df, err := GetCandleData(assetName, duration, start, end)
 	if err != nil {
-		return &DataFrameCandleCsv{}, &trader.Account{}, err
+		return &DataFrameCandle{}, &trader.Account{}, err
 	}
 
 	return df, account, nil
@@ -381,6 +390,7 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("最大ドローダウン", dd*100, "% ")
 	fmt.Println("純利益", analytics.NetProfit(s))
 	fmt.Println("シャープレシオ", analytics.SharpeRatio(s, 0.02))
+	fmt.Println("ソルティノレシオ", analytics.SortinoRatio(s, 0.02))
 	fmt.Println("トータルトレード回数", analytics.TotalTrades(s))
 	fmt.Println("勝ちトレード回数", analytics.WinningTrades(s))
 	fmt.Println("負けトレード回数", analytics.LosingTrades(s))
@@ -391,13 +401,59 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("リターンドローダウンレシオ", analytics.ReturnDDRattio(s))
 	fmt.Println("SQN", analytics.SQN(s))
 	fmt.Println("期待値", analytics.ExpectedValue(s), "USD")
+	fmt.Println("最大連勝数", analytics.MaxWinCount(s))
+	fmt.Println("最大連敗数", analytics.MaxLoseCount(s))
 	fmt.Println("勝ちトレードの平均バー数", analytics.AverageWinningHoldingBars(s))
 	fmt.Println("負けトレードの平均バー数", analytics.AverageLosingHoldingBars(s))
 	fmt.Printf("バイアンドホールドした時の利益: %f,  倍率: %f\n", profit, multiple)
 	fmt.Println("1トレードの最大損失と日時", ml, mt)
 	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
 
-	// fmt.Println(s)
+	fmt.Println(s)
 
 	fmt.Println("--------------------------------------------")
+}
+
+func GetCandleData_old(assetName string, duration string) (*DataFrameCandle, error) {
+
+	db, err := sql.Open("sqlite3", "db/kline.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	query := fmt.Sprintf("SELECT * FROM %s_%s", assetName, duration)
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var candles []data.Candle
+	for rows.Next() {
+		var k data.Candle
+		var dateStr string
+		err := rows.Scan(&dateStr, &k.Open, &k.High, &k.Low, &k.Close, &k.Volume)
+		if err != nil {
+			log.Fatal(err)
+		}
+		k.Date, err = dbquery.ConvertRFC3339ToTime(dateStr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		k.AssetName = assetName
+		k.Duration = duration
+		candles = append(candles, k)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	dfCandle := &DataFrameCandle{
+		AssetName: assetName,
+		Duration:  duration,
+		Candles:   candles,
+	}
+
+	return dfCandle, nil
 }

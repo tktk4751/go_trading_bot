@@ -406,7 +406,7 @@ func klineWithChoppy() *charts.Kline {
 		lowdata[i] = k.data[2]
 		closedata[i] = k.data[1]
 	}
-	index := risk.ChoppySlice(closedata, highdata, lowdata)
+	index := risk.ChoppySlice(70, closedata, highdata, lowdata)
 	choppyEma13 := risk.ChoppyEma(index, 13)
 
 	choppyIndex := make([]opts.LineData, len(index))

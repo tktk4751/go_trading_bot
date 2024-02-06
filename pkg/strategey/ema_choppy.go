@@ -12,7 +12,7 @@ import (
 	"github.com/markcheno/go-talib"
 )
 
-func (df *DataFrameCandleCsv) EmaChoppyStrategy(period1, period2 int, choppy int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, duration int, account *trader.Account) *execute.SignalEvents {
 
 	var StrategyName = "EMA_CHOPPY"
 	lenCandles := len(df.Candles)
@@ -29,7 +29,7 @@ func (df *DataFrameCandleCsv) EmaChoppyStrategy(period1, period2 int, choppy int
 	buyPrice := 0.0
 	slRatio := 0.9
 
-	index := risk.ChoppySlice(df.Closes(), df.Highs(), df.Lows())
+	index := risk.ChoppySlice(duration, df.Closes(), df.Highs(), df.Lows())
 	choppyEma := risk.ChoppyEma(index, choppy)
 
 	isBuyHolding := false
@@ -64,13 +64,13 @@ func (df *DataFrameCandleCsv) EmaChoppyStrategy(period1, period2 int, choppy int
 	return signalEvents
 }
 
-func (df *DataFrameCandleCsv) OptimizeEmaChoppy() (performance float64, bestPeriod1 int, bestPeriod2 int, bestChoppy int) {
+func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1 int, bestPeriod2 int, bestChoppy int, bestDuration int) {
 	runtime.GOMAXPROCS(10)
 	bestPeriod1 = 5
 	bestPeriod2 = 21
-	bestChoppy = 13
+	bestDuration = 30
 
-	limit := 1000
+	limit := 3000
 	slots := make(chan struct{}, limit)
 
 	// a := trader.NewAccount(1000)
@@ -79,78 +79,81 @@ func (df *DataFrameCandleCsv) OptimizeEmaChoppy() (performance float64, bestPeri
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	for period1 := 1; period1 < 34; period1 += 2 {
-		for period2 := 5; period2 < 250; period2 += 3 {
+	for period1 := 3; period1 < 34; period1 += 2 {
+		for period2 := 13; period2 < 89; period2 += 4 {
 			for choppy := 5; choppy < 18; choppy += 1 {
+				for duration := 10; duration < 200; duration += 10 {
 
-				wg.Add(1)
-				slots <- struct{}{}
+					wg.Add(1)
+					slots <- struct{}{}
 
-				go func(period1 int, period2 int, choppy int) {
-					defer wg.Done()
-					account := trader.NewAccount(1000) // Move this line inside the goroutine
-					signalEvents := df.EmaChoppyStrategy(period1, period2, choppy, account)
+					go func(period1 int, period2 int, choppy int, duration int) {
+						defer wg.Done()
+						account := trader.NewAccount(1000) // Move this line inside the goroutine
+						signalEvents := df.EmaChoppyStrategy(period1, period2, choppy, duration, account)
 
-					if signalEvents == nil {
-						return
-					}
+						if signalEvents == nil {
+							return
+						}
 
-					if analytics.TotalTrades(signalEvents) < 5 {
+						if analytics.TotalTrades(signalEvents) < 30 {
+							<-slots
+							return
+						}
+
+						// if analytics.NetProfit(signalEvents) < marketDefault {
+						// 	<-slots
+						// 	return
+						// }
+
+						// if analytics.SQN(signalEvents) < 3.2 {
+						// 	<-slots
+						// 	return
+						// }
+
+						// if analytics.PayOffRatio(signalEvents) < 1 {
+						// <-slots
+
+						// 	return
+						// }
+
+						// pf := analytics.SortinoRatio(signalEvents, 0.02)
+						p := analytics.SQN(signalEvents)
+						mu.Lock()
+						if performance == 0 || performance < p {
+							performance = p
+							bestPeriod1 = period1
+							bestPeriod2 = period2
+							bestChoppy = choppy
+							bestDuration = duration
+
+						}
 						<-slots
-						return
-					}
+						mu.Unlock()
 
-					// if analytics.NetProfit(signalEvents) < marketDefault {
-					// 	<-slots
-					// 	return
-					// }
+					}(period1, period2, 13, duration)
 
-					// if analytics.WinRate(signalEvents) < 0.50 {
-					// <-slots
-
-					// 	return
-					// }
-
-					// if analytics.PayOffRatio(signalEvents) < 1 {
-					// <-slots
-
-					// 	return
-					// }
-
-					p := analytics.SQN(signalEvents)
-					mu.Lock()
-					if performance == 0 || performance < p {
-						performance = p
-						bestPeriod1 = period1
-						bestPeriod2 = period2
-						bestChoppy = choppy
-
-					}
-					<-slots
-					mu.Unlock()
-
-				}(period1, period2, choppy)
-
+				}
 			}
 		}
 	}
 
 	wg.Wait()
 
-	fmt.Println("最高SQN", performance, "最適な短期線", bestPeriod1, "最適な長期線", bestPeriod2, "最適なチョッピー", bestChoppy)
+	fmt.Println("最高パフォーマンス", performance, "最適な短期線", bestPeriod1, "最適な長期線", bestPeriod2, "最適なチョッピーEMA", bestChoppy, "最適なチョッピー期間", bestDuration)
 
-	return performance, bestPeriod1, bestPeriod2, bestChoppy
+	return performance, bestPeriod1, bestPeriod2, bestChoppy, bestDuration
 }
 
 func RunEmaOptimize() {
 
 	df, account, _ := RadyBacktest()
 
-	performance, bestPeriod1, bestPeriod2, bestChoppy := df.OptimizeEmaChoppy()
+	performance, bestPeriod1, bestPeriod2, bestChoppy, bestDuration := df.OptimizeEmaChoppy()
 
 	if performance > 0 {
 
-		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, bestChoppy, account)
+		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, bestChoppy, bestDuration, account)
 		Result(df.Signal)
 
 	}
@@ -161,7 +164,7 @@ func EmaBacktest() {
 
 	df, account, _ := RadyBacktest()
 
-	df.Signal = df.EmaChoppyStrategy(5, 21, 12, account)
+	df.Signal = df.EmaChoppyStrategy(3, 33, 13, 30, account)
 	Result(df.Signal)
 
 }

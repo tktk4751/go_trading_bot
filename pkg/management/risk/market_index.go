@@ -22,9 +22,9 @@ func ChoppyMarketIndex(close []float64, high []float64, low []float64) float64 {
 	return index
 }
 
-func ChoppySlice(close []float64, high []float64, low []float64) []float64 {
+func ChoppySlice(d int, close []float64, high []float64, low []float64) []float64 {
 
-	if len(close) < 30 || len(high) < 30 || len(low) < 30 {
+	if len(close) < d || len(high) < d || len(low) < d {
 		return nil
 	}
 
@@ -32,17 +32,17 @@ func ChoppySlice(close []float64, high []float64, low []float64) []float64 {
 
 	for i := 1; i < len(close); i++ {
 
-		if i < 30 {
+		if i < d {
 			continue
 		}
 
 		// iが30以上のときだけChoppyIndexの計算を行う
 
 		// 現在の終値と30日前の終値の差の絶対値を計算する
-		direction := math.Abs(close[i] - close[i-30])
+		direction := math.Abs(close[i] - close[i-d])
 
 		// 過去30日間の最高値と最安値の差を計算する
-		volatility := Max(high[len(high)-30:]) - Min(low[len(low)-30:])
+		volatility := Max(high[len(high)-d:]) - Min(low[len(low)-d:])
 
 		// 市場の方向性とボラティリティのバランスを計算する
 		choppySlice = append(choppySlice, direction/volatility*100.0)

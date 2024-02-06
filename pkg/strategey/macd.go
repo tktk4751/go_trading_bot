@@ -152,10 +152,12 @@ func RunBacktestMacd() {
 
 	assetName := btcfg.AssetName
 	duration := btcfg.Dration
+	start := btcfg.Start
+	end := btcfg.End
 
 	account := trader.NewAccount(1000)
 
-	df, _ := GetCandleData(assetName, duration)
+	df, _ := GetCandleData(assetName, duration, start, end)
 
 	performance, bestMacdFastPeriod, bestMacdSlowPeriod, bestMacdSignalPeriod := df.OptimizeMacd()
 
