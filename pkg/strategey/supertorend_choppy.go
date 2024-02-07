@@ -62,7 +62,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 				isBuyHolding = true
 			}
 		}
-		if (c[i-1] > st[i-1] && c[i] <= st[i] || (c[i] <= buyPrice*slRatio)) && isBuyHolding {
+		if ((c[i-1] > st[i-1] && c[i] <= st[i]) || (c[i] <= buyPrice*slRatio)) && isBuyHolding {
 			accountBalance := account.GetBalance()
 			if account.Sell(c[i]) {
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, t[i], c[i], buySize, accountBalance, false)

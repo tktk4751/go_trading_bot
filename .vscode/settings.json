@@ -1,2 +1,32 @@
 {
+    "vim.useSystemClipboard": true,
+    "vim.neovimUseConfigFile": true,
+    "vim.insertModeKeyBindings": [
+      {
+        "before": ["j", "k"],
+        "after": ["<Esc>"]
+      }
+    ],
+    "vim.easymotion": true,
+    "vim.sneak": true,
+    "vim.incsearch": true,
+
+    "vim.useCtrlKeys": true,
+    "vim.hlsearch": true,
+
+    "vim.normalModeKeyBindingsNonRecursive": [
+      {
+        "before": ["<leader>", "d"],
+        "after": ["d", "d"]
+      },
+      {
+        "before": ["<C-n>"],
+        "commands": [":nohl"]
+      }
+    ],
+    "vim.leader": "<space>",
+    "vim.handleKeys": {
+      "<C-a>": false,
+      "<C-f>": false
+    }
 }

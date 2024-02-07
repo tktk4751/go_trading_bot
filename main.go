@@ -10,9 +10,9 @@ func main() {
 
 	start := time.Now()
 
-	// strategey.RunEmaOptimize()
-	// strategey.RunSTOptimize()
-	// strategey.RunDonchainOptimize()
+	strategey.RunEmaOptimize()
+	strategey.RunSTOptimize()
+	strategey.RunDonchainOptimize()
 
 	// strategey.DonchainBacktest()
 	// strategey.SuperTrendBacktest()
@@ -20,7 +20,7 @@ func main() {
 	// strategey.RunBacktestST()
 	// strategey.RunRsi2Optimize()
 
-	strategey.RunBacktestMacd()
+	// strategey.RunBacktestMacd()
 
 	// strategey.RunBacktestMacd()
 	// strategey.EmaBacktest()
