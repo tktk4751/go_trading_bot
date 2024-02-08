@@ -21,6 +21,12 @@ func (df *DataFrameCandle) BbStrategy(n int, k float64, account *trader.Account)
 	}
 
 	signalEvents := execute.NewSignalEvents()
+
+	// t := df.Time()
+	// h := df.Highs()
+	// l := df.Lows()
+	c := df.Closes()
+	// hlc3 := df.Hlc3()
 	bbUp, _, bbDown := talib.BBands(df.Closes(), n, k, k, 0)
 
 	buySize := 0.0
@@ -29,14 +35,14 @@ func (df *DataFrameCandle) BbStrategy(n int, k float64, account *trader.Account)
 		if i < n {
 			continue
 		}
-		if bbDown[i-1] > df.Candles[i-1].Close && bbDown[i] <= df.Candles[i].Close && !isBuyHolding {
+		if bbUp[i-1] > c[i-1] && bbUp[i] <= c[i] && !isBuyHolding {
 			buySize = account.TradeSize(0.9) / df.Candles[i].Close
 			accountBalance := account.GetBalance()
 			signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 
 			isBuyHolding = true
 		}
-		if bbUp[i-1] < df.Candles[i-1].Close && bbUp[i] >= df.Candles[i].Close && isBuyHolding {
+		if bbDown[i-1] < c[i-1] && bbDown[i] >= c[i] && isBuyHolding {
 			accountBalance := account.GetBalance()
 			signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 			isBuyHolding = false
@@ -86,7 +92,7 @@ func (df *DataFrameCandle) OptimizeBbGoroutin() (performance float64, bestN int,
 				// 	return
 				// }
 
-				p := analytics.NetProfit(signalEvents)
+				p := analytics.SortinoRatio(signalEvents, 0.02)
 				mu.Lock()
 				if performance == 0 || performance < p {
 					performance = p

@@ -13,8 +13,15 @@ func NewAccount(initialBalance float64) *Account {
 
 func (a *Account) TradeSize(persetege float64) float64 {
 
-	size := a.Balance * persetege
+	fee := 1 - 0.01
+	size := a.Balance * persetege * fee
 	// fmt.Println("トレードサイズ内でのアカウントバランス", a.Balance)
+	return size
+}
+
+func (a *Account) SimpleTradeSize(amount int) float64 {
+
+	size := float64(amount)
 	return size
 }
 

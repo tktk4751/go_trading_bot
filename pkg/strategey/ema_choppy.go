@@ -28,7 +28,6 @@ func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, d
 	buySize := 0.0
 	buyPrice := 0.0
 	slRatio := 0.9
-
 	index := risk.ChoppySlice(duration, df.Closes(), df.Highs(), df.Lows())
 	choppyEma := risk.ChoppyEma(index, choppy)
 
@@ -41,6 +40,8 @@ func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, d
 		if emaValue1[i-1] < emaValue2[i-1] && emaValue1[i] >= emaValue2[i] && choppyEma[i] > 50 && !isBuyHolding {
 
 			accountBalance := account.GetBalance()
+			// fee := 1 - 0.01
+
 			buySize = account.TradeSize(riskSize) / df.Candles[i].Close
 			buyPrice = df.Candles[i].Close
 			if account.Buy(df.Candles[i].Close, buySize) {
@@ -96,7 +97,7 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 							return
 						}
 
-						if analytics.TotalTrades(signalEvents) < 30 {
+						if analytics.TotalTrades(signalEvents) < 10 {
 							<-slots
 							return
 						}
@@ -117,8 +118,8 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 						// 	return
 						// }
 
-						// pf := analytics.SortinoRatio(signalEvents, 0.02)
-						p := analytics.SQN(signalEvents)
+						p := analytics.SortinoRatio(signalEvents, 0.02)
+						// p := analytics.SQN(signalEvents)
 						mu.Lock()
 						if performance == 0 || performance < p {
 							performance = p
@@ -164,7 +165,7 @@ func EmaBacktest() {
 
 	df, account, _ := RadyBacktest()
 
-	df.Signal = df.EmaChoppyStrategy(3, 33, 13, 30, account)
+	df.Signal = df.EmaChoppyStrategy(11, 13, 13, 20, account)
 	Result(df.Signal)
 
 }

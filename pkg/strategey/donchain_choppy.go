@@ -12,11 +12,12 @@ import (
 	"github.com/markcheno/go-talib"
 )
 
-// func getStrageyNameDonchain() string {
-// 	return "DBO"
-// }
+//	func getStrageyNameDonchain() string {
+//		return "DBO"
+//	}
+var simple bool = false
 
-func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, duration int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, duration int, account *trader.Account, simple bool) *execute.SignalEvents {
 	var StrategyName = "DBO_CHOPPY"
 
 	lenCandles := len(df.Candles)
@@ -35,6 +36,7 @@ func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, durati
 
 	buySize := 0.0
 	buyPrice := 0.0
+	// simlpeAccountBalance := 1000.0
 	slRatio := 0.9
 	isHolding := false
 
@@ -48,24 +50,45 @@ func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, durati
 		}
 
 		if close[i] > donchain.High[i-1] && choppyEma[i] > 50 && close[i] > ema[i] && !isHolding {
+			// fee := 1 - 0.01
+			if simple {
+				buySize = account.SimpleTradeSize(1)
+				buyPrice = close[i]
+				accountBalance := account.GetBalance()
 
-			buySize = account.TradeSize(riskSize) / df.Candles[i].Close
-			buyPrice = close[i]
-			accountBalance := account.GetBalance()
-			if account.Buy(df.Candles[i].Close, buySize) {
 				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isHolding = true
+
+			} else {
+				buySize = account.TradeSize(riskSize) / df.Candles[i].Close
+				buyPrice = close[i]
+				accountBalance := account.GetBalance()
+				if account.Buy(df.Candles[i].Close, buySize) {
+					signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isHolding = true
+				}
 			}
+
 		}
 		if (close[i] < donchain.Low[i-1] || (close[i] <= buyPrice*slRatio)) && isHolding {
-			accountBalance := account.GetBalance()
-			if account.Sell(df.Candles[i].Close) {
+
+			if simple {
+				accountBalance := 1000.0
+
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isHolding = false
-				buySize = 0.0
-				account.PositionSize = buySize
 
+			} else {
+				accountBalance := account.GetBalance()
+				if account.Sell(df.Candles[i].Close) {
+					signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isHolding = false
+					buySize = 0.0
+					account.PositionSize = buySize
+
+				}
 			}
+
 		}
 
 	}
@@ -95,16 +118,16 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 				go func(period int, choppy int, duration int) {
 					defer wg.Done()
 					account := trader.NewAccount(1000)
-					signalEvents := df.DonchainChoppyStrategy(period, choppy, duration, account)
+					signalEvents := df.DonchainChoppyStrategy(period, choppy, duration, account, simple)
 
 					if signalEvents == nil {
 						return
 					}
 
-					if analytics.TotalTrades(signalEvents) < 30 {
-						<-slots
-						return
-					}
+					// if analytics.TotalTrades(signalEvents) < 10 {
+					// 	<-slots
+					// 	return
+					// }
 
 					// if analytics.NetProfit(signalEvents) < marketDefault {
 					// 	// <-slots
@@ -152,7 +175,7 @@ func RunDonchainOptimize() {
 
 	if p > 0 {
 
-		df.Signal = df.DonchainChoppyStrategy(bestPeriod, bestChoppy, bestDuration, account)
+		df.Signal = df.DonchainChoppyStrategy(bestPeriod, bestChoppy, bestDuration, account, simple)
 		Result(df.Signal)
 
 	}
@@ -163,6 +186,6 @@ func DonchainBacktest() {
 
 	df, account, _ := RadyBacktest()
 
-	df.Signal = df.DonchainChoppyStrategy(215, 12, 60, account)
+	df.Signal = df.DonchainChoppyStrategy(5, 14, 10, account, simple)
 	Result(df.Signal)
 }

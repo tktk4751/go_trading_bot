@@ -55,6 +55,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 		if (c[i-1] < st[i-1] && c[i] >= st[i]) && choppyEma[i] > 50 && !isBuyHolding {
 
 			accountBalance := account.GetBalance()
+			// fee := 1 - 0.01
 			buySize = account.TradeSize(riskSize) / c[i]
 			buyPrice = c[i]
 			if account.Buy(c[i], buySize) {
@@ -111,7 +112,7 @@ func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPer
 							return
 						}
 
-						if analytics.TotalTrades(signalEvents) < 30 {
+						if analytics.TotalTrades(signalEvents) < 10 {
 							<-slots
 							return
 						}
@@ -131,8 +132,8 @@ func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPer
 						// 	return
 						// }
 
-						// pf := analytics.SortinoRatio(signalEvents, 0.02)
-						p := analytics.SQN(signalEvents)
+						p := analytics.SortinoRatio(signalEvents, 0.02)
+						// p := analytics.SQN(signalEvents)
 						mu.Lock()
 						if performance == 0 || performance < p {
 							performance = p

@@ -2,7 +2,7 @@
 
 
 #バックテストの基本設定 startとendの月は必ず二桁になるように｡
-assetName: "ASTRUSDT"
+assetName: "LINKUSDT"
 duration: "30m"
-start: "20220201"
-end: "20220730"
+start: "20211101"
+end: "20221130"
