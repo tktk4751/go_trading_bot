@@ -13,6 +13,7 @@ type Config struct {
 	Dration   string `yaml:"duration"`
 	Start     string `yaml:"start"`
 	End       string `yaml:"end"`
+	Simple    bool   `yaml:"simpleInterest"`
 }
 
 func Yaml() (Config, error) {

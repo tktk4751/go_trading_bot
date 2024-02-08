@@ -15,7 +15,6 @@ import (
 //	func getStrageyNameDonchain() string {
 //		return "DBO"
 //	}
-var simple bool = false
 
 func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, duration int, account *trader.Account, simple bool) *execute.SignalEvents {
 	var StrategyName = "DBO_CHOPPY"
@@ -36,7 +35,6 @@ func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, durati
 
 	buySize := 0.0
 	buyPrice := 0.0
-	// simlpeAccountBalance := 1000.0
 	slRatio := 0.9
 	isHolding := false
 
@@ -144,8 +142,8 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 					// 	return
 					// }
 
-					// pf := analytics.SortinoRatio(signalEvents, 0.02)
-					pf := analytics.SQN(signalEvents)
+					pf := analytics.SortinoRatio(signalEvents, 0.02)
+					// pf := analytics.SQN(signalEvents)
 					mu.Lock()
 					if performance < pf {
 						performance = pf
@@ -178,6 +176,11 @@ func RunDonchainOptimize() {
 		df.Signal = df.DonchainChoppyStrategy(bestPeriod, bestChoppy, bestDuration, account, simple)
 		Result(df.Signal)
 
+	} else {
+		fmt.Println("💸マイナスです")
+		df.Signal = df.DonchainChoppyStrategy(bestPeriod, bestChoppy, bestDuration, account, simple)
+		Result(df.Signal)
+
 	}
 
 }
@@ -186,6 +189,6 @@ func DonchainBacktest() {
 
 	df, account, _ := RadyBacktest()
 
-	df.Signal = df.DonchainChoppyStrategy(5, 14, 10, account, simple)
+	df.Signal = df.DonchainChoppyStrategy(223, 11, 30, account, simple)
 	Result(df.Signal)
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/markcheno/go-talib"
 )
 
-func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, duration int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, duration int, account *trader.Account, simple bool) *execute.SignalEvents {
 
 	var StrategyName = "EMA_CHOPPY"
 	lenCandles := len(df.Candles)
@@ -20,6 +20,8 @@ func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, d
 		return nil
 	}
 	signalEvents := execute.NewSignalEvents()
+
+	c := df.Closes()
 
 	emaValue1 := talib.Ema(df.Hlc3(), period1)
 	emaValue2 := talib.Ema(df.Hlc3(), period2)
@@ -39,26 +41,41 @@ func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, d
 
 		if emaValue1[i-1] < emaValue2[i-1] && emaValue1[i] >= emaValue2[i] && choppyEma[i] > 50 && !isBuyHolding {
 
-			accountBalance := account.GetBalance()
 			// fee := 1 - 0.01
-
-			buySize = account.TradeSize(riskSize) / df.Candles[i].Close
-			buyPrice = df.Candles[i].Close
-			if account.Buy(df.Candles[i].Close, buySize) {
+			if simple {
+				buySize = account.SimpleTradeSize(1)
+				buyPrice = c[i]
+				accountBalance := account.GetBalance()
 
 				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isBuyHolding = true
 
+			} else {
+				buySize = account.TradeSize(riskSize) / df.Candles[i].Close
+				buyPrice = c[i]
+				accountBalance := account.GetBalance()
+				if account.Buy(df.Candles[i].Close, buySize) {
+					signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isBuyHolding = true
+				}
 			}
 		}
 		if emaValue1[i-1] > emaValue2[i-1] && emaValue1[i] <= emaValue2[i] || (df.Candles[i].Close <= buyPrice*slRatio) && isBuyHolding {
-			accountBalance := account.GetBalance()
-			if account.Sell(df.Candles[i].Close) {
+			if simple {
+				accountBalance := 1000.0
+
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isBuyHolding = false
-				buySize = 0.0
-				account.PositionSize = buySize
 
+			} else {
+				accountBalance := account.GetBalance()
+				if account.Sell(df.Candles[i].Close) {
+					signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isBuyHolding = false
+					buySize = 0.0
+					account.PositionSize = buySize
+
+				}
 			}
 		}
 	}
@@ -91,7 +108,7 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 					go func(period1 int, period2 int, choppy int, duration int) {
 						defer wg.Done()
 						account := trader.NewAccount(1000) // Move this line inside the goroutine
-						signalEvents := df.EmaChoppyStrategy(period1, period2, choppy, duration, account)
+						signalEvents := df.EmaChoppyStrategy(period1, period2, choppy, duration, account, simple)
 
 						if signalEvents == nil {
 							return
@@ -154,7 +171,12 @@ func RunEmaOptimize() {
 
 	if performance > 0 {
 
-		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, bestChoppy, bestDuration, account)
+		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, bestChoppy, bestDuration, account, simple)
+		Result(df.Signal)
+
+	} else {
+		fmt.Println("💸マイナスです")
+		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, bestChoppy, bestDuration, account, simple)
 		Result(df.Signal)
 
 	}
@@ -165,7 +187,7 @@ func EmaBacktest() {
 
 	df, account, _ := RadyBacktest()
 
-	df.Signal = df.EmaChoppyStrategy(11, 13, 13, 20, account)
+	df.Signal = df.EmaChoppyStrategy(13, 33, 13, 30, account, simple)
 	Result(df.Signal)
 
 }

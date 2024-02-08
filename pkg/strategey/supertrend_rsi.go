@@ -180,7 +180,7 @@ func SuperTrendRSIBacktest() {
 
 	df, account, _ := RadyBacktest()
 
-	df.Signal = df.SuperTrendChoppyStrategy(13, 5.0, 8, 20, account)
+	df.Signal = df.SuperTrendRSI(13, 5.0, 8, 20, account)
 	Result(df.Signal)
 
 }

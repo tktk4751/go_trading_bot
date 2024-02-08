@@ -14,14 +14,18 @@ import (
 	"v1/pkg/data"
 	dbquery "v1/pkg/data/query"
 	"v1/pkg/execute"
+	"v1/pkg/management/risk"
 	"v1/pkg/trader"
 
 	"github.com/go-gota/gota/dataframe"
 	"github.com/go-gota/gota/series"
 )
 
+var btcfg, _ = config.Yaml()
+
 var initialBalance float64 = 1000.00
 var riskSize float64 = 0.9
+var simple bool = btcfg.Simple
 
 type DataFrameCandle struct {
 	AssetName string
@@ -335,10 +339,6 @@ func RadyBacktest() (*DataFrameCandle, *trader.Account, error) {
 
 	var err error
 
-	btcfg, err := config.Yaml()
-	if err != nil {
-		return &DataFrameCandle{}, &trader.Account{}, nil
-	}
 	account := trader.NewAccount(1000)
 
 	assetName := btcfg.AssetName
@@ -379,7 +379,7 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("🌟", name, "🌟")
 	fmt.Println("初期残高", initialBalance)
 	fmt.Println("最終残高", l, "USD", lr, "倍")
-
+	fmt.Println("オプティマルF", risk.OptimalF(s))
 	fmt.Println("勝率", analytics.WinRate(s)*100, "%")
 	fmt.Println("総利益", analytics.Profit(s))
 	// fmt.Println("ロング利益", analytics.LongProfit(s))
@@ -409,7 +409,7 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("1トレードの最大損失と日時", ml, mt)
 	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
 
-	fmt.Println(s)
+	// fmt.Println(s)
 
 	fmt.Println("--------------------------------------------")
 }

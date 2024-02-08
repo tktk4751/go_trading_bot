@@ -14,7 +14,7 @@ import (
 	"github.com/markcheno/go-talib"
 )
 
-func (df *DataFrameCandle) BetterRsiStrategy(period int, buyThread float64, dcPeriod int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandle) BetterRsiStrategy(period int, buyThread float64, dcPeriod int, account *trader.Account, simlpe bool) *execute.SignalEvents {
 
 	var StrategyName = "RSI_BETTER"
 	lenCandles := len(df.Candles)
@@ -53,26 +53,44 @@ func (df *DataFrameCandle) BetterRsiStrategy(period int, buyThread float64, dcPe
 		sl := atr[i] * slRatio
 		// tp := atr[i] * tpRatio
 
-		if (values[i-1] > buyThread && values[i] <= buyThread && c[i] < donchain.Low[i-1]) && choppyEma[i] > 60 && !isBuyHolding {
-			accountBalance := account.GetBalance()
-			buySize = account.TradeSize(riskSize) / df.Candles[i].Close
-			buyPrice = df.Candles[i].Close
-			if account.Buy(df.Candles[i].Close, buySize) {
+		if (values[i-1] < buyThread && values[i] <= buyThread && c[i-1] < donchain.Low[i-2] && c[i] <= donchain.Low[i-1]) && choppyEma[i] > 60 && !isBuyHolding {
+			// fee := 1 - 0.01
+			if simple {
+				buySize = account.SimpleTradeSize(1)
+				buyPrice = c[i]
+				accountBalance := account.GetBalance()
 
 				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isBuyHolding = true
 
+			} else {
+				buySize = account.TradeSize(riskSize) / df.Candles[i].Close
+				buyPrice = c[i]
+				accountBalance := account.GetBalance()
+				if account.Buy(df.Candles[i].Close, buySize) {
+					signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isBuyHolding = true
+				}
 			}
+
 		}
 
-		if ((c[i-1] > donchain.Mid[i-1] && c[i] <= donchain.Mid[i]) || choppyEma[i] < 10 || df.Candles[i].Close < buyPrice-sl) && isBuyHolding {
-			accountBalance := account.GetBalance()
-			if account.Sell(df.Candles[i].Close) {
+		if ((c[i-1] > donchain.Mid[i-1] && c[i] <= donchain.Mid[i]) || (values[i] < buyThread) || choppyEma[i] < 10 || df.Candles[i].Close < buyPrice-sl) && isBuyHolding {
+			if simple {
+				accountBalance := 1000.0
+
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isBuyHolding = false
-				buySize = 0.0
-				account.PositionSize = buySize
 
+			} else {
+				accountBalance := account.GetBalance()
+				if account.Sell(df.Candles[i].Close) {
+					signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isBuyHolding = false
+					buySize = 0.0
+					account.PositionSize = buySize
+
+				}
 			}
 		}
 
@@ -105,14 +123,14 @@ func (df *DataFrameCandle) OptimizeBetterRsi() (performance float64, bestPeriod 
 				go func(period int, buyThread float64, dc int) {
 					defer wg.Done()
 					account := trader.NewAccount(1000) // Move this line inside the goroutine
-					signalEvents := df.BetterRsiStrategy(period, buyThread, dc, account)
+					signalEvents := df.BetterRsiStrategy(period, buyThread, dc, account, simple)
 
 					if signalEvents == nil {
 						<-slots
 						return
 					}
 
-					if analytics.TotalTrades(signalEvents) < 5 {
+					if analytics.TotalTrades(signalEvents) < 10 {
 						<-slots
 						return
 					}
@@ -131,8 +149,8 @@ func (df *DataFrameCandle) OptimizeBetterRsi() (performance float64, bestPeriod 
 					// 	return
 					// }
 
-					p := analytics.ExpectedValue(signalEvents)
-					// p := analytics.SortinoRatio(signalEvents, 0.02)
+					// p := analytics.ExpectedValue(signalEvents)
+					p := analytics.SortinoRatio(signalEvents, 0.02)
 					mu.Lock()
 					if performance == 0 || performance < p {
 						performance = p
@@ -161,15 +179,26 @@ func RunBetterRsiOptimize() {
 
 	df, account, _ := RadyBacktest()
 
-	performance, bestPeriod, bestBuyThread, bestSlRatio := df.OptimizeBetterRsi()
+	performance, bestPeriod, bestBuyThread, bestDcPeriod := df.OptimizeBetterRsi()
 
 	if performance > 0 {
 
-		df.Signal = df.BetterRsiStrategy(bestPeriod, bestBuyThread, bestSlRatio, account)
+		df.Signal = df.BetterRsiStrategy(bestPeriod, bestBuyThread, bestDcPeriod, account, simple)
 		Result(df.Signal)
 
 	} else {
-		fmt.Println("マイナス利益です")
+		fmt.Println("💸マイナスです")
+		df.Signal = df.BetterRsiStrategy(bestPeriod, bestBuyThread, bestDcPeriod, account, simple)
+		Result(df.Signal)
 	}
+
+}
+
+func RSIBryyrtBacktest() {
+
+	df, account, _ := RadyBacktest()
+
+	df.Signal = df.BetterRsiStrategy(14, 20, 200, account, simple)
+	Result(df.Signal)
 
 }

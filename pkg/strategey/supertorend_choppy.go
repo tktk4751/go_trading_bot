@@ -11,7 +11,7 @@ import (
 	"v1/pkg/trader"
 )
 
-func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float64, choppy int, duration int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float64, choppy int, duration int, account *trader.Account, simple bool) *execute.SignalEvents {
 
 	var StrategyName = "SUPERTREND_CHOPPY"
 	// var err error
@@ -23,7 +23,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 	}
 
 	signalEvents := execute.NewSignalEvents()
-	t := df.Time()
+
 	h := df.Highs()
 	l := df.Lows()
 	c := df.Closes()
@@ -44,7 +44,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 	index := risk.ChoppySlice(duration, c, h, l)
 	choppyEma := risk.ChoppyEma(index, choppy)
 
-	isBuyHolding := false
+	isHolding := false
 
 	for i := 1; i < len(choppyEma); i++ {
 
@@ -52,25 +52,44 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 			// fmt.Printf("Skipping iteration %d due to insufficient data.\n", i)
 			continue
 		}
-		if (c[i-1] < st[i-1] && c[i] >= st[i]) && choppyEma[i] > 50 && !isBuyHolding {
+		if (c[i-1] < st[i-1] && c[i] >= st[i]) && choppyEma[i] > 50 && !isHolding {
 
-			accountBalance := account.GetBalance()
 			// fee := 1 - 0.01
-			buySize = account.TradeSize(riskSize) / c[i]
-			buyPrice = c[i]
-			if account.Buy(c[i], buySize) {
-				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, t[i], c[i], buySize, accountBalance, false)
-				isBuyHolding = true
-			}
-		}
-		if ((c[i-1] > st[i-1] && c[i] <= st[i]) || (c[i] <= buyPrice*slRatio)) && isBuyHolding {
-			accountBalance := account.GetBalance()
-			if account.Sell(c[i]) {
-				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, t[i], c[i], buySize, accountBalance, false)
-				isBuyHolding = false
-				buySize = 0.0
-				account.PositionSize = buySize
+			if simple {
+				buySize = account.SimpleTradeSize(1)
+				buyPrice = c[i]
+				accountBalance := account.GetBalance()
 
+				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+				isHolding = true
+
+			} else {
+				buySize = account.TradeSize(riskSize) / df.Candles[i].Close
+				buyPrice = c[i]
+				accountBalance := account.GetBalance()
+				if account.Buy(df.Candles[i].Close, buySize) {
+					signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isHolding = true
+				}
+			}
+
+		}
+		if ((c[i-1] > st[i-1] && c[i] <= st[i]) || (c[i] <= buyPrice*slRatio)) && isHolding {
+			if simple {
+				accountBalance := 1000.0
+
+				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+				isHolding = false
+
+			} else {
+				accountBalance := account.GetBalance()
+				if account.Sell(df.Candles[i].Close) {
+					signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isHolding = false
+					buySize = 0.0
+					account.PositionSize = buySize
+
+				}
 			}
 		}
 	}
@@ -106,7 +125,7 @@ func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPer
 					go func(atrPeriod int, factor float64, choppy int, duration int) {
 						defer wg.Done()
 						account := trader.NewAccount(1000) // Move this line inside the goroutine
-						signalEvents := df.SuperTrendChoppyStrategy(atrPeriod, factor, choppy, duration, account)
+						signalEvents := df.SuperTrendChoppyStrategy(atrPeriod, factor, choppy, duration, account, simple)
 
 						if signalEvents == nil {
 							return
@@ -168,7 +187,12 @@ func RunSTOptimize() {
 
 	if performance > 0 {
 
-		df.Signal = df.SuperTrendChoppyStrategy(bestAtrPeriod, bestFactor, bestChoppy, bestDuration, account)
+		df.Signal = df.SuperTrendChoppyStrategy(bestAtrPeriod, bestFactor, bestChoppy, bestDuration, account, simple)
+		Result(df.Signal)
+
+	} else {
+		fmt.Println("💸マイナスです")
+		df.Signal = df.SuperTrendChoppyStrategy(bestAtrPeriod, bestFactor, bestChoppy, bestDuration, account, simple)
 		Result(df.Signal)
 
 	}
@@ -179,7 +203,7 @@ func SuperTrendBacktest() {
 
 	df, account, _ := RadyBacktest()
 
-	df.Signal = df.SuperTrendChoppyStrategy(7, 2.5, 11, 30, account)
+	df.Signal = df.SuperTrendChoppyStrategy(13, 7.5, 11, 120, account, simple)
 	Result(df.Signal)
 
 }
