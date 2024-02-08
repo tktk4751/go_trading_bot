@@ -13,12 +13,11 @@ func main() {
 	// strategey.RunEmaOptimize()
 	// strategey.RunSTOptimize()
 	// strategey.RunDonchainOptimize()
-
 	// strategey.RunBetterRsiOptimize()
 
-	strategey.DonchainBacktest()
-	strategey.EmaBacktest()
-	strategey.SuperTrendBacktest()
+	// strategey.DonchainBacktest()
+	// strategey.EmaBacktest()
+	// strategey.SuperTrendBacktest()
 	strategey.RSIBryyrtBacktest()
 
 	// strategey.EmaBacktest()

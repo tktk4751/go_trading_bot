@@ -2,8 +2,9 @@
 
 
 #バックテストの基本設定
-assetName: "ATOMUSDT"
-duration: "5m"
+assetName: "SOLUSDT"
+duration: "30m"
 start: "20200801"
-end: "20230730"
-simpleInterest: true
+end: "20210930"
+simpleInterest: true 
+positionPersentage: 0.3

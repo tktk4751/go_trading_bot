@@ -57,7 +57,7 @@ func TestProfit(t *testing.T) {
 	}
 
 	// Call the Profit function and store the result
-	profit := analytics.Profit(s)
+	profit := analytics.LongProfit(s)
 
 	// Define the expected value
 	want := 150.0
@@ -65,6 +65,6 @@ func TestProfit(t *testing.T) {
 	// Check if the result is equal to the expected value
 	if profit != want {
 		// If not, report an error to the testing framework
-		t.Errorf("Profit(s) = %v, want %v", profit, want)
+		t.Errorf("LongProfit(s) = %v, want %v", profit, want)
 	}
 }

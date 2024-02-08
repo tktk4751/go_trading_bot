@@ -24,7 +24,7 @@ import (
 var btcfg, _ = config.Yaml()
 
 var initialBalance float64 = 1000.00
-var riskSize float64 = 0.9
+var riskSize float64 = btcfg.Percentage
 var simple bool = btcfg.Simple
 
 type DataFrameCandle struct {
@@ -370,7 +370,7 @@ func Result(s *execute.SignalEvents) {
 
 	n := s.Signals[0]
 
-	dd := analytics.MaxDrawdownRatio(s)
+	dd := analytics.MaxDrawdownPercent(s)
 
 	// d, _ := analytics.MaxDrawdown(s)
 
@@ -380,15 +380,20 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("初期残高", initialBalance)
 	fmt.Println("最終残高", l, "USD", lr, "倍")
 	fmt.Println("オプティマルF", risk.OptimalF(s))
-	fmt.Println("勝率", analytics.WinRate(s)*100, "%")
-	fmt.Println("総利益", analytics.Profit(s))
-	// fmt.Println("ロング利益", analytics.LongProfit(s))
-	// fmt.Println("ショート利益", analytics.ShortProfit(s))
-	fmt.Println("総損失", analytics.Loss(s))
+
+	fmt.Println("ロング利益", analytics.LongProfit(s))
+	fmt.Println("ロング損失", analytics.Loss(s))
+	fmt.Println("ショート利益", analytics.ShortProfit(s))
+	fmt.Println("ショート損失", analytics.ShortLoss(s))
+	fmt.Println("ロング勝率", analytics.WinRate(s)*100, "%")
+	fmt.Println("ショート勝率", analytics.ShortWinRate(s)*100, "%")
+	fmt.Println("ロング純利益", analytics.LongNetProfit(s))
+	fmt.Println("ショート純利益", analytics.ShortNetProfit(s))
+	fmt.Println("トータル純利益", analytics.TotalNetProfit(s))
+	fmt.Println("トータル勝率", analytics.TotalWinRate(s))
 	fmt.Println("プロフィットファクター", analytics.ProfitFactor(s))
 	fmt.Println("最大ドローダウン金額", analytics.MaxDrawdownUSD(s), "USD ")
 	fmt.Println("最大ドローダウン", dd*100, "% ")
-	fmt.Println("純利益", analytics.NetProfit(s))
 	fmt.Println("シャープレシオ", analytics.SharpeRatio(s, 0.02))
 	fmt.Println("ソルティノレシオ", analytics.SortinoRatio(s, 0.02))
 	fmt.Println("トータルトレード回数", analytics.TotalTrades(s))

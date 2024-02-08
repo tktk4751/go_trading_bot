@@ -128,7 +128,7 @@ func (df *DataFrameCandle) OptimizeST() (performance float64, bestAtrPeriod int,
 					return
 				}
 
-				p := analytics.NetProfit(signalEvents)
+				p := analytics.LongNetProfit(signalEvents)
 				mu.Lock()
 				if performance == 0 || performance < p {
 					performance = p

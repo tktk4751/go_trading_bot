@@ -98,7 +98,7 @@ func (df *DataFrameCandle) OptimizeRsi() (performance float64, bestPeriod int, b
 						return
 					}
 
-					if analytics.NetProfit(signalEvents) < marketDefault {
+					if analytics.LongNetProfit(signalEvents) < marketDefault {
 						return
 					}
 
@@ -165,7 +165,7 @@ func (df *DataFrameCandle) OptimizeRsiDrawDownGoroutin() (performance float64, b
 						return
 					}
 
-					if analytics.NetProfit(signalEvents) < marketDefault {
+					if analytics.LongNetProfit(signalEvents) < marketDefault {
 						return
 					}
 

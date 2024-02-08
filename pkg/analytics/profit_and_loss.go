@@ -69,7 +69,7 @@ func Profi2(s *execute.SignalEvents) float64 {
 	return profit
 }
 
-func Profit(s *execute.SignalEvents) float64 {
+func LongProfit(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
@@ -126,21 +126,41 @@ func Loss(s *execute.SignalEvents) float64 {
 	return loss
 }
 
-func NetProfit(s *execute.SignalEvents) float64 {
+func LongNetProfit(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
-	totalProfit := Profit(s)
+	totalProfit := LongProfit(s)
 	totalLoss := Loss(s)
 
 	return totalProfit - totalLoss
+}
+
+func ShortNetProfit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	totalProfit := ShortProfit(s)
+	totalLoss := ShortLoss(s)
+
+	return totalProfit - totalLoss
+}
+
+func TotalNetProfit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	longProfit := LongNetProfit(s)
+	shortProfit := ShortNetProfit(s)
+
+	return longProfit + shortProfit
 }
 
 func ProfitFactor(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
-	totalProfit := Profit(s)
+	totalProfit := LongProfit(s)
 	totalLoss := Loss(s)
 
 	// if totalLoss == 0 {
@@ -161,7 +181,7 @@ func FinalBalance(s *execute.SignalEvents) (float64, float64) {
 		return 0, 0
 	}
 
-	finalBlanceValue := accountBalance + NetProfit(s)
+	finalBlanceValue := accountBalance + LongNetProfit(s)
 	finalBlanceRatio := finalBlanceValue / accountBalance
 
 	return finalBlanceValue, finalBlanceRatio
@@ -276,4 +296,61 @@ func ReturnProfitLoss(s *execute.SignalEvents) []float64 {
 	}
 
 	return pl
+}
+
+func ShortProfit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	var profit float64 = 0.0
+	var sellPrice float64
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" {
+			return 0.0
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "BUY" && sellPrice != 0 {
+			if signal.Price < sellPrice {
+				profit += (sellPrice - signal.Price) * signal.Size
+			}
+			sellPrice = 0 // Reset sell price after a buy
+		}
+	}
+
+	return profit
+}
+
+func ShortLoss(s *execute.SignalEvents) float64 {
+
+	if s == nil {
+		return 0.0
+	}
+	var loss float64 = 0.0
+	var sellPrice float64
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" {
+			return 0.0
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "BUY" && sellPrice != 0 {
+			if signal.Price > sellPrice {
+				loss += (signal.Price - sellPrice) * signal.Size
+			}
+			sellPrice = 0 // Reset sell price after a buy
+		}
+	}
+
+	return loss
 }

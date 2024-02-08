@@ -8,7 +8,7 @@ func ReturnDDRattio(s *execute.SignalEvents) float64 {
 		return 0.0
 	}
 
-	np := NetProfit(s)
+	np := LongNetProfit(s)
 	dd := MaxDrawdownUSD(s)
 
 	rdr := np / dd

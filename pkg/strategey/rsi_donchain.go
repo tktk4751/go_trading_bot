@@ -121,7 +121,7 @@ func (df *DataFrameCandle) OptimizeRsiDonchainGoroutin() (performance float64, b
 					// 	return
 					// }
 
-					p := analytics.NetProfit(signalEvents)
+					p := analytics.LongNetProfit(signalEvents)
 					mu.Lock()
 					if performance == 0 || performance < p {
 						performance = p
@@ -174,7 +174,7 @@ func (df *DataFrameCandle) OptimizeRsiDonchainDrawDownGoroutin() (performance fl
 						return
 					}
 
-					if analytics.NetProfit(signalEvents) < marketDefault {
+					if analytics.LongNetProfit(signalEvents) < marketDefault {
 						return
 					}
 
