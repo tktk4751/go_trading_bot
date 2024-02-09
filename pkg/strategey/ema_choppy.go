@@ -9,6 +9,10 @@ import (
 	"v1/pkg/management/risk"
 	"v1/pkg/trader"
 
+	"github.com/c-bata/goptuna"
+
+	"github.com/c-bata/goptuna/tpe"
+
 	"github.com/markcheno/go-talib"
 )
 
@@ -83,6 +87,63 @@ func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, d
 }
 
 func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1 int, bestPeriod2 int, bestChoppy int, bestDuration int) {
+
+	// オブジェクティブ関数を定義
+	objective := func(trial goptuna.Trial) (float64, error) {
+		// ハイパーパラメータの候補をサンプリング
+		period1, _ := trial.SuggestInt("period1", 3, 69)
+		period2, _ := trial.SuggestInt("period2", 13, 200)
+		choppy, _ := trial.SuggestInt("choppy", 5, 18)
+		duration, _ := trial.SuggestInt("duration", 10, 200)
+
+		account := trader.NewAccount(1000) // Move this line inside the objective function
+		signalEvents := df.EmaChoppyStrategy(period1, period2, choppy, duration, account, simple)
+
+		if signalEvents == nil {
+			return 0.0, nil
+		}
+
+		if analytics.TotalTrades(signalEvents) < 10 {
+			return 0.0, nil
+		}
+
+		// p := analytics.SortinoRatio(signalEvents, 0.02)
+		p := analytics.Prr(signalEvents)
+		return p, nil // パフォーマンスを返す
+	}
+
+	// ベイズ最適化の設定
+	study, err := goptuna.CreateStudy(
+		"ema-choppy-optimization",
+		goptuna.StudyOptionSampler(tpe.NewSampler()),                 // 獲得関数としてTPEを使用
+		goptuna.StudyOptionDirection(goptuna.StudyDirectionMaximize), // 最大化問題として定義
+		goptuna.StudyOptionLogger(nil),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// ベイズ最適化の実行
+	err = study.Optimize(objective, 500)
+	if err != nil {
+		panic(err)
+	}
+
+	// 最適化結果の取得
+	v, _ := study.GetBestValue()
+	params, _ := study.GetBestParams()
+	performance = v
+	bestPeriod1 = params["period1"].(int)
+	bestPeriod2 = params["period2"].(int)
+	bestChoppy = params["choppy"].(int)
+	bestDuration = params["duration"].(int)
+
+	fmt.Println("最高パフォーマンス", performance, "最適な短期線", bestPeriod1, "最適な長期線", bestPeriod2, "最適なチョッピーEMA", bestChoppy, "最適なチョッピー期間", bestDuration)
+
+	return performance, bestPeriod1, bestPeriod2, bestChoppy, bestDuration
+}
+
+func (df *DataFrameCandle) OptimizeEmaChoppy2() (performance float64, bestPeriod1 int, bestPeriod2 int, bestChoppy int, bestDuration int) {
 	runtime.GOMAXPROCS(10)
 	bestPeriod1 = 5
 	bestPeriod2 = 21
@@ -168,6 +229,26 @@ func RunEmaOptimize() {
 	df, account, _ := RadyBacktest()
 
 	performance, bestPeriod1, bestPeriod2, bestChoppy, bestDuration := df.OptimizeEmaChoppy()
+
+	if performance > 0 {
+
+		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, bestChoppy, bestDuration, account, simple)
+		Result(df.Signal)
+
+	} else {
+		fmt.Println("💸マイナスです")
+		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, bestChoppy, bestDuration, account, simple)
+		Result(df.Signal)
+
+	}
+
+}
+
+func RunEmaOptimize2() {
+
+	df, account, _ := RadyBacktest()
+
+	performance, bestPeriod1, bestPeriod2, bestChoppy, bestDuration := df.OptimizeEmaChoppy2()
 
 	if performance > 0 {
 

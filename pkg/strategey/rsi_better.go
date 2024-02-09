@@ -53,7 +53,7 @@ func (df *DataFrameCandle) BetterRsiStrategy(period int, buyThread float64, dcPe
 		sl := atr[i] * slRatio
 		// tp := atr[i] * tpRatio
 
-		if ((values[i-1] < buyThread && values[i] >= buyThread) && (c[i-1] < donchain.Low[i-2] && c[i] >= donchain.Low[i-1])) && choppyEma[i] > 60 && !isBuyHolding {
+		if ((values[i-1] < buyThread && values[i] >= buyThread) && (c[i-1] < donchain.Low[i-2] && c[i] >= donchain.Low[i-1])) && choppyEma[i] > 50 && !isBuyHolding {
 			// fee := 1 - 0.01
 			if simple {
 				buySize = account.SimpleTradeSize(1)

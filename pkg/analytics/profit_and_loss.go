@@ -247,7 +247,7 @@ func ProfitFactor(s *execute.SignalEvents) float64 {
 	totalLoss := TotalLoss(s)
 
 	if totalLoss == 0 {
-		return math.Inf(1)
+		return 0.0
 	}
 
 	return totalProfit / totalLoss

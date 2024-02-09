@@ -11,13 +11,23 @@ func main() {
 	start := time.Now()
 
 	// strategey.RunEmaOptimize()
-	// strategey.RunSTOptimize()
+	strategey.RunSTOptimize()
+
+	end2 := time.Now()
+
+	// 処理時間を計算
+	duration12 := end2.Sub(start)
+
+	// 処理時間を表示
+	fmt.Printf("処理時間: %v\n", duration12)
+	start2 := time.Now()
+	strategey.RunSTOptimize2()
 	// strategey.RunDonchainOptimize()
 	// strategey.RunBetterRsiOptimize()
 
 	// strategey.DonchainBacktest()
 	// strategey.EmaBacktest()
-	strategey.SuperTrendBacktest()
+	// strategey.SuperTrendBacktest()
 	// strategey.RSIBetterBacktest()
 
 	// strategey.EmaBacktest()
@@ -44,7 +54,7 @@ func main() {
 	end := time.Now()
 
 	// 処理時間を計算
-	duration1 := end.Sub(start)
+	duration1 := end.Sub(start2)
 
 	// 処理時間を表示
 	fmt.Printf("処理時間: %v\n", duration1)
