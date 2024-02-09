@@ -377,10 +377,20 @@ func Result(s *execute.SignalEvents) {
 	name := n.StrategyName + "_" + n.AssetName + "_" + n.Duration
 
 	fmt.Println("🌟", name, "🌟")
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("🔮コア指標🔮")
+	fmt.Println("")
 	fmt.Println("初期残高", initialBalance)
 	fmt.Println("最終残高", l, "USD", lr, "倍")
 	fmt.Println("オプティマルF", risk.OptimalF(s))
-
+	fmt.Println("ソルティノレシオ", analytics.SortinoRatio(s, 0.02))
+	fmt.Println("SQN", analytics.SQN(s))
+	fmt.Println("期待値", analytics.ExpectedValue(s), "USD")
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("🕵方向別指標🕵")
+	fmt.Println("")
 	fmt.Println("ロング利益", analytics.LongProfit(s))
 	fmt.Println("ロング損失", analytics.Loss(s))
 	fmt.Println("ショート利益", analytics.ShortProfit(s))
@@ -389,13 +399,17 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("ショート勝率", analytics.ShortWinRate(s)*100, "%")
 	fmt.Println("ロング純利益", analytics.LongNetProfit(s))
 	fmt.Println("ショート純利益", analytics.ShortNetProfit(s))
+	fmt.Println("")
+	fmt.Println("")
+
+	fmt.Println("📊トータル指標📊")
+	fmt.Println("")
 	fmt.Println("トータル純利益", analytics.TotalNetProfit(s))
-	fmt.Println("トータル勝率", analytics.TotalWinRate(s))
+	fmt.Println("トータル勝率", analytics.TotalWinRate(s)*100, "%")
 	fmt.Println("プロフィットファクター", analytics.ProfitFactor(s))
 	fmt.Println("最大ドローダウン金額", analytics.MaxDrawdownUSD(s), "USD ")
 	fmt.Println("最大ドローダウン", dd*100, "% ")
 	fmt.Println("シャープレシオ", analytics.SharpeRatio(s, 0.02))
-	fmt.Println("ソルティノレシオ", analytics.SortinoRatio(s, 0.02))
 	fmt.Println("トータルトレード回数", analytics.TotalTrades(s))
 	fmt.Println("勝ちトレード回数", analytics.WinningTrades(s))
 	fmt.Println("負けトレード回数", analytics.LosingTrades(s))
@@ -404,8 +418,6 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("ペイオフレシオ", analytics.PayOffRatio(s))
 	fmt.Println("ゲインペインレシオ", analytics.GainPainRatio(s))
 	fmt.Println("リターンドローダウンレシオ", analytics.ReturnDDRattio(s))
-	fmt.Println("SQN", analytics.SQN(s))
-	fmt.Println("期待値", analytics.ExpectedValue(s), "USD")
 	fmt.Println("最大連勝数", analytics.MaxWinCount(s))
 	fmt.Println("最大連敗数", analytics.MaxLoseCount(s))
 	fmt.Println("勝ちトレードの平均バー数", analytics.AverageWinningHoldingBars(s))
@@ -417,6 +429,9 @@ func Result(s *execute.SignalEvents) {
 	// fmt.Println(s)
 
 	fmt.Println("--------------------------------------------")
+	fmt.Println("")
+	fmt.Println("")
+
 }
 
 func GetCandleData_old(assetName string, duration string) (*DataFrameCandle, error) {

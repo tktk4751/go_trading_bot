@@ -181,7 +181,7 @@ func FinalBalance(s *execute.SignalEvents) (float64, float64) {
 		return 0, 0
 	}
 
-	finalBlanceValue := accountBalance + LongNetProfit(s)
+	finalBlanceValue := accountBalance + TotalNetProfit(s)
 	finalBlanceRatio := finalBlanceValue / accountBalance
 
 	return finalBlanceValue, finalBlanceRatio
@@ -272,12 +272,13 @@ func GainPainRatio(s *execute.SignalEvents) float64 {
 
 }
 
-func ReturnProfitLoss(s *execute.SignalEvents) []float64 {
+func PLSlice(s *execute.SignalEvents) []float64 {
 	if s == nil {
 		return nil
 	}
 	var pl []float64 // profit or loss slice
 	var buyPrice float64
+	var sellPrice float64
 
 	if s.Signals == nil || len(s.Signals) == 0 {
 		return nil
@@ -289,9 +290,21 @@ func ReturnProfitLoss(s *execute.SignalEvents) []float64 {
 		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
-			pl = append(pl, (signal.Price-buyPrice)*signal.Size) // append the profit or loss of the trade to the slice
-			buyPrice = 0                                         // Reset buy price after a sell
+			// if there is a previous sell price, calculate the profit or loss
+			if sellPrice != 0 {
+				pl = append(pl, (sellPrice-buyPrice)*signal.Size)
+				// reset the sell price
+				sellPrice = 0
+			}
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+			// if there is a previous buy price, calculate the profit or loss
+			if buyPrice != 0 {
+				pl = append(pl, (sellPrice-buyPrice)*signal.Size)
+				// reset the buy price
+				buyPrice = 0
+			}
 		}
 	}
 

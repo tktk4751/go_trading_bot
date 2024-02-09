@@ -1,7 +1,6 @@
 package analytics
 
 import (
-	"fmt"
 	"math"
 	"sort"
 	dbquery "v1/pkg/data/query"
@@ -92,7 +91,7 @@ func MaxDrawdownPercent(s *execute.SignalEvents) float64 {
 			// TODO: Handle other sides if necessary
 			continue
 		}
-		fmt.Println(signal.AccountBalance)
+
 		if signal.AccountBalance > peak { // Update peak value if account balance is higher
 			peak = signal.AccountBalance
 		}
