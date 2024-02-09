@@ -2,8 +2,8 @@
 
 
 #バックテストの基本設定
-assetName: "AVAXUSDT"
-duration: "15m"
+assetName: "DOGEUSDT"
+duration: "1h"
 start: "20221201"
 end: "20231230"
 simpleInterest: true

@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"math"
 	"time"
 
 	dbquery "v1/pkg/data/query"
@@ -97,7 +98,7 @@ func LongProfit(s *execute.SignalEvents) float64 {
 	return profit
 }
 
-func Loss(s *execute.SignalEvents) float64 {
+func LongLoss(s *execute.SignalEvents) float64 {
 
 	if s == nil {
 		return 0.0
@@ -126,12 +127,94 @@ func Loss(s *execute.SignalEvents) float64 {
 	return loss
 }
 
+func ShortProfit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	var profit float64 = 0.0
+	var sellPrice float64
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" {
+			return 0.0
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "BUY" && sellPrice != 0 {
+			if signal.Price < sellPrice {
+				profit += (sellPrice - signal.Price) * signal.Size
+			}
+			sellPrice = 0 // Reset sell price after a buy
+		}
+	}
+
+	return profit
+}
+
+func ShortLoss(s *execute.SignalEvents) float64 {
+
+	if s == nil {
+		return 0.0
+	}
+	var loss float64 = 0.0
+	var sellPrice float64
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" {
+			return 0.0
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "BUY" && sellPrice != 0 {
+			if signal.Price > sellPrice {
+				loss += (signal.Price - sellPrice) * signal.Size
+			}
+			sellPrice = 0 // Reset sell price after a buy
+		}
+	}
+
+	return loss
+}
+
+func TotalProfit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+
+	long := LongProfit(s)
+	short := ShortProfit(s)
+
+	totalProfit := long + short
+
+	return totalProfit
+}
+
+func TotalLoss(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+
+	long := LongLoss(s)
+	short := ShortLoss(s)
+
+	totalLoss := long + short
+
+	return totalLoss
+}
 func LongNetProfit(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
 	totalProfit := LongProfit(s)
-	totalLoss := Loss(s)
+	totalLoss := LongLoss(s)
 
 	return totalProfit - totalLoss
 }
@@ -160,14 +243,27 @@ func ProfitFactor(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
-	totalProfit := LongProfit(s)
-	totalLoss := Loss(s)
+	totalProfit := TotalProfit(s)
+	totalLoss := TotalLoss(s)
 
-	// if totalLoss == 0 {
-	// 	return math.Inf(1)
-	// }
+	if totalLoss == 0 {
+		return math.Inf(1)
+	}
 
 	return totalProfit / totalLoss
+}
+
+func Prr(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+
+	pf := ProfitFactor(s)
+	n := float64(TotalTrades(s))
+
+	prr := pf / ((n + 1.96*math.Sqrt(n)) / (n - 1.96*math.Sqrt(n)))
+
+	return prr
 }
 
 func FinalBalance(s *execute.SignalEvents) (float64, float64) {
@@ -309,61 +405,4 @@ func PLSlice(s *execute.SignalEvents) []float64 {
 	}
 
 	return pl
-}
-
-func ShortProfit(s *execute.SignalEvents) float64 {
-	if s == nil {
-		return 0.0
-	}
-	var profit float64 = 0.0
-	var sellPrice float64
-
-	if s.Signals == nil || len(s.Signals) == 0 {
-		return 0.0
-	}
-	for _, signal := range s.Signals {
-
-		if signal.Side != "BUY" && signal.Side != "SELL" {
-			return 0.0
-		}
-		if signal.Side == "SELL" {
-			sellPrice = signal.Price
-		} else if signal.Side == "BUY" && sellPrice != 0 {
-			if signal.Price < sellPrice {
-				profit += (sellPrice - signal.Price) * signal.Size
-			}
-			sellPrice = 0 // Reset sell price after a buy
-		}
-	}
-
-	return profit
-}
-
-func ShortLoss(s *execute.SignalEvents) float64 {
-
-	if s == nil {
-		return 0.0
-	}
-	var loss float64 = 0.0
-	var sellPrice float64
-
-	if s.Signals == nil || len(s.Signals) == 0 {
-		return 0.0
-	}
-	for _, signal := range s.Signals {
-
-		if signal.Side != "BUY" && signal.Side != "SELL" {
-			return 0.0
-		}
-		if signal.Side == "SELL" {
-			sellPrice = signal.Price
-		} else if signal.Side == "BUY" && sellPrice != 0 {
-			if signal.Price > sellPrice {
-				loss += (signal.Price - sellPrice) * signal.Size
-			}
-			sellPrice = 0 // Reset sell price after a buy
-		}
-	}
-
-	return loss
 }

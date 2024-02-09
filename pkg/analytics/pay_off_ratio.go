@@ -7,7 +7,7 @@ func AveregeProfit(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
-	winningTrades := WinningTrades(s)
+	winningTrades := LongWinningTrades(s)
 
 	totalProfit := LongProfit(s)
 
@@ -34,9 +34,9 @@ func AveregeLoss(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
-	losingTrades := LosingTrades(s)
+	losingTrades := LongLosingTrades(s)
 
-	totalLoss := Loss(s)
+	totalLoss := LongLoss(s)
 
 	averegeLoss := totalLoss / float64(losingTrades)
 

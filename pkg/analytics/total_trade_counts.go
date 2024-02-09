@@ -6,15 +6,34 @@ import (
 	"v1/pkg/execute"
 )
 
+// func TotalTrades(s *execute.SignalEvents) int {
+
+// 	if s == nil {
+// 		return 0.0
+// 	}
+// 	var totalTrades int
+
+// 	for _, signal := range s.Signals {
+// 		if signal.Side == "BUY" || signal.Side == "SELL" {
+// 			totalTrades++
+// 		}
+// 	}
+
+// 	return totalTrades
+// }
+
 func TotalTrades(s *execute.SignalEvents) int {
 
 	if s == nil {
-		return 0.0
+		return 0
 	}
 	var totalTrades int
 
-	for _, signal := range s.Signals {
-		if signal.Side == "SELL" {
+	for i := 0; i < len(s.Signals)-1; i++ {
+		currentSignal := s.Signals[i]
+		nextSignal := s.Signals[i+1]
+
+		if currentSignal.Side != nextSignal.Side {
 			totalTrades++
 		}
 	}
@@ -22,7 +41,7 @@ func TotalTrades(s *execute.SignalEvents) int {
 	return totalTrades
 }
 
-func WinningTrades(s *execute.SignalEvents) int {
+func LongWinningTrades(s *execute.SignalEvents) int {
 
 	if s == nil {
 		return 0.0
@@ -44,7 +63,7 @@ func WinningTrades(s *execute.SignalEvents) int {
 	return winningTrades
 }
 
-func LosingTrades(s *execute.SignalEvents) int {
+func LongLosingTrades(s *execute.SignalEvents) int {
 
 	if s == nil {
 		return 0.0
@@ -62,6 +81,74 @@ func LosingTrades(s *execute.SignalEvents) int {
 			buyPrice = 0 // Reset buy price after a sell
 		}
 	}
+
+	return losingTrades
+}
+
+func ShortWinningTrades(s *execute.SignalEvents) int {
+	if s == nil {
+		return 0
+	}
+	var winningTrades int
+	var sellPrice float64
+
+	for _, signal := range s.Signals {
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "BUY" && sellPrice != 0 {
+			if signal.Price < sellPrice {
+				winningTrades++
+			}
+			sellPrice = 0 // Reset sell price after a buy
+		}
+	}
+
+	return winningTrades
+}
+
+func ShortLosingTrades(s *execute.SignalEvents) int {
+	if s == nil {
+		return 0
+	}
+	var losingTrades int
+	var sellPrice float64
+
+	for _, signal := range s.Signals {
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "BUY" && sellPrice != 0 {
+			if signal.Price > sellPrice {
+				losingTrades++
+			}
+			sellPrice = 0 // Reset sell price after a buy
+		}
+	}
+
+	return losingTrades
+}
+
+func TotalWinningTrades(s *execute.SignalEvents) int {
+	if s == nil {
+		return 0
+	}
+
+	long := LongWinningTrades(s)
+	short := ShortWinningTrades(s)
+
+	winningTrades := long + short
+
+	return winningTrades
+}
+
+func TotalLosingTrades(s *execute.SignalEvents) int {
+	if s == nil {
+		return 0
+	}
+
+	long := LongLosingTrades(s)
+	short := ShortLosingTrades(s)
+
+	losingTrades := long + short
 
 	return losingTrades
 }
