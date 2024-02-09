@@ -13,8 +13,7 @@ func NewAccount(initialBalance float64) *Account {
 
 func (a *Account) TradeSize(persetege float64) float64 {
 
-	fee := 1 - 0.01
-	size := a.Balance * persetege * fee
+	size := a.Balance * persetege
 	// fmt.Println("トレードサイズ内でのアカウントバランス", a.Balance)
 	return size
 }
@@ -26,7 +25,9 @@ func (a *Account) SimpleTradeSize(amount int) float64 {
 }
 
 func (a *Account) Buy(price, size float64) bool {
-	cost := price * size
+
+	fee := 1 - 0.01
+	cost := price * size * fee
 	if cost > a.Balance {
 		return false
 	}

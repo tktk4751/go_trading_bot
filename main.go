@@ -18,7 +18,7 @@ func main() {
 	// strategey.DonchainBacktest()
 	// strategey.EmaBacktest()
 	// strategey.SuperTrendBacktest()
-	strategey.RSIBryyrtBacktest()
+	strategey.RSIBetterBacktest()
 
 	// strategey.EmaBacktest()
 	// strategey.RunBacktestST()

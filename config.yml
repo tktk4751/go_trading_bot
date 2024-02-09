@@ -5,6 +5,6 @@
 assetName: "SOLUSDT"
 duration: "30m"
 start: "20200801"
-end: "20210930"
-simpleInterest: true 
-positionPersentage: 0.3
+end: "20230930"
+simpleInterest: false
+positionPersentage: 0.9
