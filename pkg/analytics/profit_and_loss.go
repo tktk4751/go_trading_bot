@@ -406,3 +406,48 @@ func PLSlice(s *execute.SignalEvents) []float64 {
 
 	return pl
 }
+
+func TotalProfitSlice(s *execute.SignalEvents) []float64 {
+	if s == nil {
+		return nil
+	}
+	var profit []float64 // total profit slice
+	var buyPrice float64
+	var sellPrice float64
+	var longProfit float64
+	var shortProfit float64
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return nil
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" {
+			return nil
+		}
+		if signal.Side == "BUY" {
+			buyPrice = signal.Price
+			// if there is a previous sell price, calculate the short profit
+			if sellPrice != 0 {
+				shortProfit = (sellPrice - buyPrice) * signal.Size
+				profit = append(profit, shortProfit)
+				// reset the sell price and short profit
+				sellPrice = 0
+				shortProfit = 0
+			}
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+			// if there is a previous buy price, calculate the long profit
+			if buyPrice != 0 {
+				longProfit = (sellPrice - buyPrice) * signal.Size
+				profit = append(profit, longProfit)
+				// reset the buy price and long profit
+				buyPrice = 0
+				longProfit = 0
+			}
+		}
+	}
+
+	return profit
+}

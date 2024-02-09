@@ -15,10 +15,10 @@ func main() {
 	// strategey.RunDonchainOptimize()
 	// strategey.RunBetterRsiOptimize()
 
-	strategey.DonchainBacktest()
-	strategey.EmaBacktest()
+	// strategey.DonchainBacktest()
+	// strategey.EmaBacktest()
 	strategey.SuperTrendBacktest()
-	strategey.RSIBetterBacktest()
+	// strategey.RSIBetterBacktest()
 
 	// strategey.EmaBacktest()
 	// strategey.RunBacktestST()

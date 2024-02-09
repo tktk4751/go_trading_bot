@@ -10,7 +10,7 @@ func ExpectedValue(s *execute.SignalEvents) float64 {
 
 	var ev float64
 
-	wr := WinRate(s)
+	wr := TotalWinRate(s)
 
 	aw := AveregeProfit(s)
 

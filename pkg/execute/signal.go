@@ -141,7 +141,7 @@ func (s *SignalEvents) CanLongClose(t time.Time) bool {
 func (s *SignalEvents) CanSell(t time.Time) bool {
 	lenSignals := len(s.Signals)
 	if lenSignals == 0 {
-		return true
+		return false
 	}
 
 	lastSignal := s.Signals[lenSignals-1]
@@ -223,10 +223,10 @@ func (s *SignalEvents) Sell(strategyName string, assetName string, duration stri
 
 func (s *SignalEvents) Close(signalId uuid.UUID, strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) bool {
 
-	if !s.CanLongClose(date) || !s.CanShortClose(date) {
+	// if !s.CanLongClose(date) || !s.CanShortClose(date) {
 
-		return false
-	}
+	// 	return false
+	// }
 
 	signalEvent := SignalEvent{
 		SignalId:       signalId,

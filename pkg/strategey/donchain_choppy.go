@@ -142,8 +142,8 @@ func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64
 					// 	return
 					// }
 
-					pf := analytics.SortinoRatio(signalEvents, 0.02)
-					// pf := analytics.SQN(signalEvents)
+					// pf := analytics.SortinoRatio(signalEvents, 0.02)
+					pf := analytics.Prr(signalEvents)
 					mu.Lock()
 					if performance < pf {
 						performance = pf

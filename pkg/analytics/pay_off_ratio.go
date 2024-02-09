@@ -7,9 +7,9 @@ func AveregeProfit(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
-	winningTrades := LongWinningTrades(s)
+	winningTrades := TotalWinningTrades(s)
 
-	totalProfit := LongProfit(s)
+	totalProfit := TotalProfit(s)
 
 	averegeProfit := totalProfit / float64(winningTrades)
 
@@ -17,26 +17,14 @@ func AveregeProfit(s *execute.SignalEvents) float64 {
 
 }
 
-func AveregeProfitRatio(s *execute.SignalEvents) float64 {
-	if s == nil {
-		return 0.0
-	}
-	totalProfit := LongProfit(s)
-
-	// USDの金額ベースから%表記に変換
-	averageProfitPercentage := (totalProfit / s.Signals[0].AccountBalance)
-
-	return averageProfitPercentage
-}
-
 func AveregeLoss(s *execute.SignalEvents) float64 {
 
 	if s == nil {
 		return 0.0
 	}
-	losingTrades := LongLosingTrades(s)
+	losingTrades := TotalLosingTrades(s)
 
-	totalLoss := LongLoss(s)
+	totalLoss := TotalLoss(s)
 
 	averegeLoss := totalLoss / float64(losingTrades)
 
@@ -51,7 +39,7 @@ func AveregeTradeProfit(s *execute.SignalEvents) float64 {
 	}
 	totalTrade := TotalTrades(s)
 
-	netProfit := LongNetProfit(s)
+	netProfit := TotalNetProfit(s)
 
 	averegeTradeProfit := netProfit / float64(totalTrade)
 

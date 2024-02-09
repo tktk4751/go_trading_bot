@@ -135,8 +135,8 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 						// 	return
 						// }
 
-						p := analytics.SortinoRatio(signalEvents, 0.02)
-						// p := analytics.SQN(signalEvents)
+						// p := analytics.SortinoRatio(signalEvents, 0.02)
+						p := analytics.Prr(signalEvents)
 						mu.Lock()
 						if performance == 0 || performance < p {
 							performance = p

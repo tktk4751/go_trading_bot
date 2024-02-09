@@ -1,0 +1,107 @@
+for i := 1; i < len(choppyEma); i++ {
+
+		if (c[i-1] < st[i-1] && c[i] >= st[i]) && choppyEma[i] > 50 && !isHolding {
+
+			// fee := 1 - 0.01
+			if simple {
+				buySize = account.SimpleTradeSize(1)
+				buyPrice = c[i]
+				accountBalance := account.GetBalance()
+
+				// Buyメソッドの戻り値を受け取る
+				ok, signalId := signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+				if ok {
+					isHolding = true
+					// signalIdを保持する
+					currentSignalId = signalId
+				}
+
+			} else {
+				buySize = account.TradeSize(riskSize) / df.Candles[i].Close
+				buyPrice = c[i]
+				accountBalance := account.GetBalance()
+				if account.Entry(df.Candles[i].Close, buySize) {
+					// Buyメソッドの戻り値を受け取る
+					ok, signalId := signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					if ok {
+						isHolding = true
+						// signalIdを保持する
+						currentSignalId = signalId
+					}
+				}
+			}
+
+		}
+		if ((c[i-1] > st[i-1] && c[i] <= st[i]) || (c[i] <= buyPrice*slRatio)) && isHolding {
+			if simple {
+				accountBalance := account.GetBalance()
+
+				// Closeメソッドを呼ぶ
+				signalEvents.Close(currentSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+				isHolding = false
+
+			} else {
+				accountBalance := account.GetBalance()
+				if account.Sell(df.Candles[i].Close) {
+					// Closeメソッドを呼ぶ
+					signalEvents.Close(currentSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isHolding = false
+					buySize = 0.0
+					account.PositionSize = buySize
+
+				}
+			}
+		}
+
+		if (c[i-1] > st[i-1] && c[i] <= st[i]) && choppyEma[i] < 50 && !isHolding {
+
+			// fee := 1 - 0.01
+			if simple {
+				sellSize = account.SimpleTradeSize(1)
+				sellPrice = c[i]
+				accountBalance := account.GetBalance()
+
+				// ShortEntryメソッドの戻り値を受け取る
+				ok, signalId := signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, accountBalance, false)
+				if ok {
+					isHolding = true
+					// signalIdを保持する
+					currentSignalId = signalId
+				}
+
+			} else {
+				sellSize = account.TradeSize(riskSize) / df.Candles[i].Close
+				sellPrice = c[i]
+				accountBalance := account.GetBalance()
+				if account.Entry(df.Candles[i].Close, sellSize) {
+					// ShortEntryメソッドの戻り値を受け取る
+					ok, signalId := signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, accountBalance, false)
+					if ok {
+						isHolding = true
+						// signalIdを保持する
+						currentSignalId = signalId
+					}
+				}
+			}
+
+		}
+		if ((c[i-1] < st[i-1] && c[i] >= st[i]) || (c[i] >= sellPrice*slRatio)) && isHolding {
+			if simple {
+				accountBalance := 1000.0
+
+				// Closeメソッドを呼ぶ
+				signalEvents.Close(currentSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, accountBalance, false)
+				isHolding = false
+
+			} else {
+				accountBalance := account.GetBalance()
+				if account.Exit(df.Candles[i].Close) {
+					// Closeメソッドを呼ぶ
+					signalEvents.Close(currentSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, accountBalance, false)
+					isHolding = false
+					sellSize = 0.0
+					account.PositionSize = sellSize
+
+				}
+			}
+		}

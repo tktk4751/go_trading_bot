@@ -149,8 +149,8 @@ func (df *DataFrameCandle) OptimizeBetterRsi() (performance float64, bestPeriod 
 					// 	return
 					// }
 
-					// p := analytics.ExpectedValue(signalEvents)
-					p := analytics.SortinoRatio(signalEvents, 0.02)
+					p := analytics.Prr(signalEvents)
+					// p := analytics.SortinoRatio(signalEvents, 0.02)
 					mu.Lock()
 					if performance == 0 || performance < p {
 						performance = p
