@@ -125,6 +125,19 @@ func (s *SignalEvents) CanBuy(t time.Time) bool {
 	return false
 }
 
+func (s *SignalEvents) CanLongClose(t time.Time) bool {
+	lenSignals := len(s.Signals)
+	if lenSignals == 0 {
+		return false
+	}
+
+	lastSignal := s.Signals[lenSignals-1]
+	if lastSignal.Side == "BUY" && lastSignal.Time.Before(t) {
+		return true
+	}
+	return false
+}
+
 func (s *SignalEvents) CanSell(t time.Time) bool {
 	lenSignals := len(s.Signals)
 	if lenSignals == 0 {
@@ -138,10 +151,23 @@ func (s *SignalEvents) CanSell(t time.Time) bool {
 	return false
 }
 
-func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) bool {
+func (s *SignalEvents) CanShortClose(t time.Time) bool {
+	lenSignals := len(s.Signals)
+	if lenSignals == 0 {
+		return false
+	}
+
+	lastSignal := s.Signals[lenSignals-1]
+	if lastSignal.Side == "SELL" && lastSignal.Time.Before(t) {
+		return true
+	}
+	return false
+}
+
+func (s *SignalEvents) Buy(strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) (bool, uuid.UUID) {
 
 	if !s.CanBuy(date) {
-		return false
+		return false, uuid.UUID{}
 	}
 
 	signalId := uuid.New()
@@ -165,14 +191,13 @@ func (s *SignalEvents) Buy(strategyName string, assetName string, duration strin
 	// }
 	s.Signals = append(s.Signals, signalEvent)
 
-	return true
+	return true, signalId
 }
 
-func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) bool {
+func (s *SignalEvents) Sell(strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) (bool, uuid.UUID) {
 
 	if !s.CanSell(date) {
-
-		return false
+		return false, uuid.UUID{}
 	}
 	signalId := uuid.New()
 	signalEvent := SignalEvent{
@@ -182,6 +207,34 @@ func (s *SignalEvents) Sell(strategyName string, assetName string, duration stri
 		AssetName:      assetName,
 		Duration:       duration,
 		Side:           "SELL",
+		Price:          price,
+		Size:           size,
+		AccountBalance: accountBalance,
+	}
+
+	// if save {
+	// 	signalEvent.Save()
+
+	// }
+
+	s.Signals = append(s.Signals, signalEvent)
+	return true, signalId
+}
+
+func (s *SignalEvents) Close(signalId uuid.UUID, strategyName string, assetName string, duration string, date time.Time, price, size float64, accountBalance float64, save bool) bool {
+
+	// if !s.CanLongClose(date) || !s.CanShortClose(date) {
+
+	// 	return false
+	// }
+
+	signalEvent := SignalEvent{
+		SignalId:       signalId,
+		Time:           date,
+		StrategyName:   strategyName,
+		AssetName:      assetName,
+		Duration:       duration,
+		Side:           "CLOSE",
 		Price:          price,
 		Size:           size,
 		AccountBalance: accountBalance,

@@ -2,21 +2,21 @@ package strategey
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"v1/pkg/analytics"
-	"v1/pkg/config"
 	"v1/pkg/execute"
 	"v1/pkg/indicator/indicators"
 	"v1/pkg/management/risk"
 	"v1/pkg/trader"
+
+	"github.com/markcheno/go-talib"
 )
 
-// func getStrageyNameDonchain() string {
-// 	return "DBO"
-// }
+//	func getStrageyNameDonchain() string {
+//		return "DBO"
+//	}
 
-func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, account *trader.Account) *execute.SignalEvents {
+func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, duration int, account *trader.Account, simple bool) *execute.SignalEvents {
 	var StrategyName = "DBO_CHOPPY"
 
 	lenCandles := len(df.Candles)
@@ -26,15 +26,19 @@ func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, accoun
 
 	signalEvents := execute.NewSignalEvents()
 
-	donchain := indicators.Donchain(df.Highs(), df.Low(), period)
+	donchain := indicators.Donchain(df.Highs(), df.Lows(), period)
 	// atr := talib.Atr(df.Highs(), df.Low(), df.Closes(), 21)
+
+	ema := talib.Ema(df.Hlc3(), 89)
 
 	close := df.Closes()
 
 	buySize := 0.0
+	buyPrice := 0.0
+	slRatio := 0.9
 	isHolding := false
 
-	index := risk.ChoppySlice(df.Closes(), df.Highs(), df.Low())
+	index := risk.ChoppySlice(duration, df.Closes(), df.Highs(), df.Lows())
 	choppyEma := risk.ChoppyEma(index, choppy)
 
 	for i := 30; i < lenCandles; i++ {
@@ -43,24 +47,46 @@ func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, accoun
 			continue
 		}
 
-		if close[i] > donchain.High[i-1] && choppyEma[i] > 50 && !isHolding {
+		if close[i] > donchain.High[i-1] && choppyEma[i] > 50 && close[i] > ema[i] && !isHolding {
+			// fee := 1 - 0.01
+			if simple {
+				buySize = account.SimpleTradeSize(1)
+				buyPrice = close[i]
+				accountBalance := account.GetBalance()
 
-			buySize = account.TradeSize(riskSize) / df.Candles[i].Close
-			accountBalance := account.GetBalance()
-			if account.Buy(df.Candles[i].Close, buySize) {
 				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isHolding = true
+
+			} else {
+				buySize = account.TradeSize(riskSize) / df.Candles[i].Close
+				buyPrice = close[i]
+				accountBalance := account.GetBalance()
+				if account.Buy(df.Candles[i].Close, buySize) {
+					signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isHolding = true
+				}
 			}
+
 		}
-		if close[i] < donchain.Low[i-1] && isHolding {
-			accountBalance := account.GetBalance()
-			if account.Sell(df.Candles[i].Close) {
+		if (close[i] < donchain.Low[i-1] || (close[i] <= buyPrice*slRatio)) && isHolding {
+
+			if simple {
+				accountBalance := 1000.0
+
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isHolding = false
-				buySize = 0.0
-				account.PositionSize = buySize
 
+			} else {
+				accountBalance := account.GetBalance()
+				if account.Sell(df.Candles[i].Close) {
+					signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
+					isHolding = false
+					buySize = 0.0
+					account.PositionSize = buySize
+
+				}
 			}
+
 		}
 
 	}
@@ -68,102 +94,101 @@ func (df *DataFrameCandle) DonchainChoppyStrategy(period int, choppy int, accoun
 
 }
 
-func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64, bestPeriod int, bestChoppy int) {
+func (df *DataFrameCandle) OptimizeDonchainChoppyGoroutin() (performance float64, bestPeriod int, bestChoppy int, bestDuration int) {
 
 	bestPeriod = 40
-	bestChoppy = 50
+	bestChoppy = 13
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	a := trader.NewAccount(1000)
-	marketDefault, _ := BuyAndHoldingStrategy(a)
+	// a := trader.NewAccount(1000)
+	// marketDefault, _ := BuyAndHoldingStrategy(a)
 
-	limit := 1000
+	limit := 3000
 	slots := make(chan struct{}, limit)
 
-	for period := 10; period < 250; period += 3 {
-		for choppy := 8; choppy < 21; choppy += 1 {
-			wg.Add(1)
-			slots <- struct{}{}
+	for period := 5; period < 250; period += 10 {
+		for duration := 10; duration < 200; duration += 10 {
+			for choppy := 6; choppy < 18; choppy += 2 {
+				wg.Add(1)
+				slots <- struct{}{}
 
-			go func(period int, choppy int) {
-				defer wg.Done()
-				account := trader.NewAccount(1000)
-				signalEvents := df.DonchainChoppyStrategy(period, choppy, account)
+				go func(period int, choppy int, duration int) {
+					defer wg.Done()
+					account := trader.NewAccount(1000)
+					signalEvents := df.DonchainChoppyStrategy(period, choppy, duration, account, simple)
 
-				if signalEvents == nil {
-					return
-				}
+					if signalEvents == nil {
+						return
+					}
 
-				if analytics.TotalTrades(signalEvents) < 3 {
-					<-slots
-					return
-				}
+					// if analytics.TotalTrades(signalEvents) < 10 {
+					// 	<-slots
+					// 	return
+					// }
 
-				if analytics.NetProfit(signalEvents) < marketDefault {
+					// if analytics.NetProfit(signalEvents) < marketDefault {
+					// 	// <-slots
+					// 	return
+					// }
+
+					// if analytics.SQN(signalEvents) < 3.2 {
+					// 	<-slots
+					// 	return
+					// }
+
+					// if analytics.ProfitFactor(signalEvents) < 3 {
 					// <-slots
-					return
-				}
+					// 	return
+					// }
 
-				// if analytics.WinRate(signalEvents) < 0.45 {
-				// <-slots
-				// 	return
-				// }
-
-				// if analytics.ProfitFactor(signalEvents) < 3 {
-				// <-slots
-				// 	return
-				// }
-
-				pf := analytics.ProfitFactor(signalEvents)
-				mu.Lock()
-				if performance < pf {
-					performance = pf
-					bestPeriod = period
-					bestChoppy = choppy
-				}
-				<-slots
-				mu.Unlock()
-			}(period, choppy)
+					// pf := analytics.SortinoRatio(signalEvents, 0.02)
+					pf := analytics.Prr(signalEvents)
+					mu.Lock()
+					if performance < pf {
+						performance = pf
+						bestPeriod = period
+						bestChoppy = choppy
+						bestDuration = duration
+					}
+					<-slots
+					mu.Unlock()
+				}(period, choppy, duration)
+			}
 		}
 	}
 
 	wg.Wait()
 
-	fmt.Println("最高利益", performance, "最適なピリオド", bestPeriod, "最適なチョッピー", bestChoppy)
+	fmt.Println("最高パフォーマンス", performance, "最適なピリオド", bestPeriod, "最適なチョッピー", bestChoppy, "最適なチョッピー期間", bestDuration)
 
-	return performance, bestPeriod, bestChoppy
+	return performance, bestPeriod, bestChoppy, bestDuration
 }
 
-func RunBacktestDonchainChoppy() {
+func RunDonchainOptimize() {
 
-	var err error
+	df, account, _ := RadyBacktest()
 
-	// account := trader.NewAccount(1000)
-	btcfg, err := config.Yaml()
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-
-	fmt.Println("--------------------------------------------")
-
-	// strategyName := getStrageyNameDonchain()
-	assetName := btcfg.AssetName
-	duration := btcfg.Dration
-
-	// limit := btcfg.Limit
-
-	account := trader.NewAccount(1000)
-
-	df, _ := GetCandleData(assetName, duration)
-
-	p, bestPeriod, bestChoppy := df.OptimizeDonchainChoppyGoroutin()
+	p, bestPeriod, bestChoppy, bestDuration := df.OptimizeDonchainChoppyGoroutin()
 
 	if p > 0 {
 
-		df.Signal = df.DonchainChoppyStrategy(bestPeriod, bestChoppy, account)
+		df.Signal = df.DonchainChoppyStrategy(bestPeriod, bestChoppy, bestDuration, account, simple)
+		Result(df.Signal)
+
+	} else {
+		fmt.Println("💸マイナスです")
+		df.Signal = df.DonchainChoppyStrategy(bestPeriod, bestChoppy, bestDuration, account, simple)
 		Result(df.Signal)
 
 	}
 
+}
+
+func DonchainBacktest() {
+
+	df, account, _ := RadyBacktest()
+
+	df.Signal = df.DonchainChoppyStrategy(223, 11, 30, account, simple)
+	Result(df.Signal)
 }

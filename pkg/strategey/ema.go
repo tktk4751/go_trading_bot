@@ -69,8 +69,8 @@ func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, 
 	limit := 1000
 	slots := make(chan struct{}, limit)
 
-	a := trader.NewAccount(1000)
-	marketDefault, _ := BuyAndHoldingStrategy(a)
+	// a := trader.NewAccount(1000)
+	// marketDefault, _ := BuyAndHoldingStrategy(a)
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -90,15 +90,15 @@ func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, 
 					return
 				}
 
-				if analytics.TotalTrades(signalEvents) < 3 {
+				if analytics.TotalTrades(signalEvents) < 5 {
 					<-slots
 					return
 				}
 
-				if analytics.NetProfit(signalEvents) < marketDefault {
-					<-slots
-					return
-				}
+				// if analytics.NetProfit(signalEvents) < marketDefault {
+				// 	<-slots
+				// 	return
+				// }
 
 				// if analytics.WinRate(signalEvents) < 0.50 {
 				// <-slots
@@ -112,7 +112,7 @@ func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, 
 				// 	return
 				// }
 
-				p := analytics.ProfitFactor(signalEvents)
+				p := analytics.SQN(signalEvents)
 				mu.Lock()
 				if performance == 0 || performance < p {
 					performance = p
@@ -130,7 +130,7 @@ func (df *DataFrameCandle) OptimizeEma() (performance float64, bestPeriod1 int, 
 
 	wg.Wait()
 
-	fmt.Println("最高利益", performance, "最適な短期線", bestPeriod1, "最適な長期線", bestPeriod2)
+	fmt.Println("最高SQN", performance, "最適な短期線", bestPeriod1, "最適な長期線", bestPeriod2)
 
 	return performance, bestPeriod1, bestPeriod2
 }
@@ -173,11 +173,12 @@ func RunBacktestEma() {
 
 	assetName := btcfg.AssetName
 	duration := btcfg.Dration
-	// limit := btcfg.Limit
+	start := btcfg.Start
+	end := btcfg.End
 
 	account := trader.NewAccount(1000)
 
-	df, _ := GetCandleData(assetName, duration)
+	df, _ := GetCsvDataFrame(assetName, duration, start, end)
 
 	performance, bestPeriod1, bestPeriod2 := df.OptimizeEma()
 

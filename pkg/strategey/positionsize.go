@@ -68,7 +68,7 @@ func Loss(s *execute.SignalEvents) float64 {
 // 	var totalProfit float64 = 0.0
 // 	for _, signal := range s.Signals {
 // 		if signal.Side == "SELL" {
-// 			totalProfit += Profit(s)
+// 			totalProfit += LongProfit(s)
 // 		}
 // 	}
 // 	return totalProfit
@@ -79,7 +79,7 @@ func Loss(s *execute.SignalEvents) float64 {
 // 	var totalLoss float64 = 0.0
 // 	for _, signal := range s.Signals {
 // 		if signal.Side == "BUY" {
-// 			totalLoss -= Profit(s)
+// 			totalLoss -= LongProfit(s)
 // 		}
 // 	}
 // 	return totalLoss
