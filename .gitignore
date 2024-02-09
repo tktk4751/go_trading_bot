@@ -2,6 +2,7 @@
 *.dll
 *.exe
 *.db
+*.html
 bin/
 spot/
 html/

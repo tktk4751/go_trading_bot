@@ -3,50 +3,50 @@ package main
 import (
 	"fmt"
 	"time"
-	dbquery "v1/pkg/data/query"
-	"v1/pkg/indicator/indicators"
+	"v1/pkg/strategey"
 )
 
 func main() {
 
 	start := time.Now()
 
-	// 	close, _ := dbquery.GetCloseData("SOLUSDT", "1h")
+	// strategey.RunEmaOptimize()
+	// strategey.RunSTOptimize()
+	// strategey.RunDonchainOptimize()
 
-	// 	high, _ := dbquery.GetHighData("SOLUSDT", "1h")
+	// strategey.RunBetterRsiOptimize()
 
-	// 	low, _ := dbquery.GetLowData("SOLUSDT", "1h")
+	strategey.DonchainBacktest()
+	strategey.EmaBacktest()
+	strategey.SuperTrendBacktest()
+	strategey.RSIBryyrtBacktest()
 
-	// 	index := risk.ChoppySlice(close, high, low)
+	// strategey.EmaBacktest()
+	// strategey.RunBacktestST()
+	// strategey.RunRsi2Optimize()
 
-	// 	e := risk.ChoppyEma(index)
-	// 	fmt.Println(e)
-	// strategey.RunBacktestEma()
-	// strategey.RunBacktestEmaChoppy()
+	// strategey.RunBacktestBb()
 
-	// strategey.RunBacktestDonchain()
-	// strategey.RunBacktestDonchainChoppy()
+	// strategey.RunBacktestMacd()
+	// strategey.EmaBacktest()
+	// assetName := "TIAUSDT"
+	// duration := "4h"
 
-	// c, _ := strategey.GetCsvDataFrame("BTCUSDT", "4h", "2022-05", "2023-12")
+	// df, _ := strategey.GetCandleData(assetName, duration)
 
-	// fmt.Println(c)
+	// h := df.Highs()
+	// l := df.Lows()
+	// c := df.Closes()
 
-	a := "SOLUSDT"
-	d := "4h"
+	// a := risk.ChoppySlice(c, h, l)
 
-	h, _ := dbquery.GetHighData(a, d)
-	l, _ := dbquery.GetLowData(a, d)
-	c, _ := dbquery.GetCloseData(a, d)
-
-	st, _ := indicators.SuperTrend(21, 3.0, h, l, c)
-
-	fmt.Println(st.SuperTrend)
+	// fmt.Println(a)
 
 	end := time.Now()
 
 	// 処理時間を計算
-	duration := end.Sub(start)
+	duration1 := end.Sub(start)
 
 	// 処理時間を表示
-	fmt.Printf("処理時間: %v\n", duration)
+	fmt.Printf("処理時間: %v\n", duration1)
 }

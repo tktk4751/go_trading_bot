@@ -251,3 +251,29 @@ func GainPainRatio(s *execute.SignalEvents) float64 {
 	return gainPainRatio
 
 }
+
+func ReturnProfitLoss(s *execute.SignalEvents) []float64 {
+	if s == nil {
+		return nil
+	}
+	var pl []float64 // profit or loss slice
+	var buyPrice float64
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return nil
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" {
+			return nil
+		}
+		if signal.Side == "BUY" {
+			buyPrice = signal.Price
+		} else if signal.Side == "SELL" && buyPrice != 0 {
+			pl = append(pl, (signal.Price-buyPrice)*signal.Size) // append the profit or loss of the trade to the slice
+			buyPrice = 0                                         // Reset buy price after a sell
+		}
+	}
+
+	return pl
+}

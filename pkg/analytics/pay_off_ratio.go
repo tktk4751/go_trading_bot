@@ -17,6 +17,18 @@ func AveregeProfit(s *execute.SignalEvents) float64 {
 
 }
 
+func AveregeProfitRatio(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	totalProfit := Profit(s)
+
+	// USDの金額ベースから%表記に変換
+	averageProfitPercentage := (totalProfit / s.Signals[0].AccountBalance)
+
+	return averageProfitPercentage
+}
+
 func AveregeLoss(s *execute.SignalEvents) float64 {
 
 	if s == nil {

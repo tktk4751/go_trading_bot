@@ -6,40 +6,53 @@ import (
 	"sync"
 	"v1/pkg/analytics"
 	"v1/pkg/execute"
+	"v1/pkg/indicator/indicators"
 	"v1/pkg/management/risk"
 	"v1/pkg/trader"
-
-	"github.com/markcheno/go-talib"
 )
 
-func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, duration int, account *trader.Account, simple bool) *execute.SignalEvents {
+func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float64, choppy int, duration int, account *trader.Account, simple bool) *execute.SignalEvents {
 
-	var StrategyName = "EMA_CHOPPY"
+	var StrategyName = "SUPERTREND_CHOPPY"
+	// var err error
+
 	lenCandles := len(df.Candles)
-	if lenCandles <= period1 || lenCandles <= period2 {
+
+	if lenCandles <= atrPeriod {
 		return nil
 	}
+
 	signalEvents := execute.NewSignalEvents()
 
+	h := df.Highs()
+	l := df.Lows()
 	c := df.Closes()
+	// hlc3 := df.Hlc3()
 
-	emaValue1 := talib.Ema(df.Hlc3(), period1)
-	emaValue2 := talib.Ema(df.Hlc3(), period2)
-	// rsiValue := talib.Rsi(df.Closes(), 14)
+	superTrend, _ := indicators.SuperTrend(atrPeriod, factor, h, l, c)
+
+	// stUp := superTrend.UpperBand
+	// stLow := superTrend.UpperBand
+	st := superTrend.SuperTrend
+
+	// rsi := talib.Rsi(hlc3, 14)
 
 	buySize := 0.0
 	buyPrice := 0.0
 	slRatio := 0.9
-	index := risk.ChoppySlice(duration, df.Closes(), df.Highs(), df.Lows())
+
+	index := risk.ChoppySlice(duration, c, h, l)
 	choppyEma := risk.ChoppyEma(index, choppy)
 
-	isBuyHolding := false
-	for i := 1; i < lenCandles; i++ {
-		if i < period1 || i < period2 || i >= len(choppyEma) {
+	isHolding := false
+
+	for i := 1; i < len(choppyEma); i++ {
+
+		if i < atrPeriod {
+			// fmt.Printf("Skipping iteration %d due to insufficient data.\n", i)
 			continue
 		}
-
-		if emaValue1[i-1] < emaValue2[i-1] && emaValue1[i] >= emaValue2[i] && choppyEma[i] > 50 && !isBuyHolding {
+		if (c[i-1] < st[i-1] && c[i] >= st[i]) && choppyEma[i] > 50 && !isHolding {
 
 			// fee := 1 - 0.01
 			if simple {
@@ -48,7 +61,7 @@ func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, d
 				accountBalance := account.GetBalance()
 
 				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
-				isBuyHolding = true
+				isHolding = true
 
 			} else {
 				buySize = account.TradeSize(riskSize) / df.Candles[i].Close
@@ -56,22 +69,23 @@ func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, d
 				accountBalance := account.GetBalance()
 				if account.Buy(df.Candles[i].Close, buySize) {
 					signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
-					isBuyHolding = true
+					isHolding = true
 				}
 			}
+
 		}
-		if emaValue1[i-1] > emaValue2[i-1] && emaValue1[i] <= emaValue2[i] || (df.Candles[i].Close <= buyPrice*slRatio) && isBuyHolding {
+		if ((c[i-1] > st[i-1] && c[i] <= st[i]) || (c[i] <= buyPrice*slRatio)) && isHolding {
 			if simple {
 				accountBalance := 1000.0
 
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
-				isBuyHolding = false
+				isHolding = false
 
 			} else {
 				accountBalance := account.GetBalance()
 				if account.Sell(df.Candles[i].Close) {
 					signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
-					isBuyHolding = false
+					isHolding = false
 					buySize = 0.0
 					account.PositionSize = buySize
 
@@ -79,13 +93,16 @@ func (df *DataFrameCandle) EmaChoppyStrategy(period1, period2 int, choppy int, d
 			}
 		}
 	}
+
+	// fmt.Println(signalEvents)
 	return signalEvents
 }
 
-func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1 int, bestPeriod2 int, bestChoppy int, bestDuration int) {
+func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPeriod int, bestFactor float64, bestChoppy int, bestDuration int) {
 	runtime.GOMAXPROCS(10)
-	bestPeriod1 = 5
-	bestPeriod2 = 21
+	bestAtrPeriod = 21
+	bestFactor = 3.0
+	bestChoppy = 13
 	bestDuration = 30
 
 	limit := 3000
@@ -97,18 +114,18 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	for period1 := 3; period1 < 34; period1 += 2 {
-		for period2 := 13; period2 < 89; period2 += 4 {
-			for choppy := 5; choppy < 18; choppy += 1 {
+	for atrPeriod := 5; atrPeriod < 40; atrPeriod += 2 {
+		for factor := 2.0; factor < 8.0; factor += 0.5 {
+			for choppy := 5; choppy < 18; choppy += 2 {
 				for duration := 10; duration < 200; duration += 10 {
 
 					wg.Add(1)
 					slots <- struct{}{}
 
-					go func(period1 int, period2 int, choppy int, duration int) {
+					go func(atrPeriod int, factor float64, choppy int, duration int) {
 						defer wg.Done()
 						account := trader.NewAccount(1000) // Move this line inside the goroutine
-						signalEvents := df.EmaChoppyStrategy(period1, period2, choppy, duration, account, simple)
+						signalEvents := df.SuperTrendChoppyStrategy(atrPeriod, factor, choppy, duration, account, simple)
 
 						if signalEvents == nil {
 							return
@@ -131,7 +148,6 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 
 						// if analytics.PayOffRatio(signalEvents) < 1 {
 						// <-slots
-
 						// 	return
 						// }
 
@@ -140,8 +156,8 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 						mu.Lock()
 						if performance == 0 || performance < p {
 							performance = p
-							bestPeriod1 = period1
-							bestPeriod2 = period2
+							bestAtrPeriod = atrPeriod
+							bestFactor = factor
 							bestChoppy = choppy
 							bestDuration = duration
 
@@ -149,7 +165,7 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 						<-slots
 						mu.Unlock()
 
-					}(period1, period2, 13, duration)
+					}(atrPeriod, factor, choppy, duration)
 
 				}
 			}
@@ -158,36 +174,36 @@ func (df *DataFrameCandle) OptimizeEmaChoppy() (performance float64, bestPeriod1
 
 	wg.Wait()
 
-	fmt.Println("最高パフォーマンス", performance, "最適な短期線", bestPeriod1, "最適な長期線", bestPeriod2, "最適なチョッピーEMA", bestChoppy, "最適なチョッピー期間", bestDuration)
+	fmt.Println("最高のパフォーマンス", performance, "最適なATR", bestAtrPeriod, "最適なファクター", bestFactor, "最適なチョッピー", bestChoppy, "最適なチョッピー期間", bestDuration)
 
-	return performance, bestPeriod1, bestPeriod2, bestChoppy, bestDuration
+	return performance, bestAtrPeriod, bestFactor, bestChoppy, bestDuration
 }
 
-func RunEmaOptimize() {
+func RunSTOptimize() {
 
 	df, account, _ := RadyBacktest()
 
-	performance, bestPeriod1, bestPeriod2, bestChoppy, bestDuration := df.OptimizeEmaChoppy()
+	performance, bestAtrPeriod, bestFactor, bestChoppy, bestDuration := df.OptimizeSuperTrend()
 
 	if performance > 0 {
 
-		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, bestChoppy, bestDuration, account, simple)
+		df.Signal = df.SuperTrendChoppyStrategy(bestAtrPeriod, bestFactor, bestChoppy, bestDuration, account, simple)
 		Result(df.Signal)
 
 	} else {
 		fmt.Println("💸マイナスです")
-		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, bestChoppy, bestDuration, account, simple)
+		df.Signal = df.SuperTrendChoppyStrategy(bestAtrPeriod, bestFactor, bestChoppy, bestDuration, account, simple)
 		Result(df.Signal)
 
 	}
 
 }
 
-func EmaBacktest() {
+func SuperTrendBacktest() {
 
 	df, account, _ := RadyBacktest()
 
-	df.Signal = df.EmaChoppyStrategy(13, 33, 13, 30, account, simple)
+	df.Signal = df.SuperTrendChoppyStrategy(13, 7.5, 11, 120, account, simple)
 	Result(df.Signal)
 
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 	"v1/pkg/data"
 	dbquery "v1/pkg/data/query"
+	"v1/pkg/indicator/indicators"
 	"v1/pkg/management/risk"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -222,6 +223,171 @@ func klineWithMA() *charts.Kline {
 	return kline
 }
 
+func klineWithDonchain() *charts.Kline {
+	kline := charts.NewKLine()
+
+	x := make([]string, 0)
+	y := make([]opts.KlineData, 0)
+	for i := 0; i < len(kd); i++ {
+		x = append(x, kd[i].date)
+		y = append(y, opts.KlineData{Value: kd[i].data})
+	}
+
+	// Calculate MA20 using talib
+	highdata := make([]float64, len(kd))
+	lowdata := make([]float64, len(kd))
+	for i, k := range kd {
+		highdata[i] = k.data[3]
+		lowdata[i] = k.data[2]
+	}
+
+	donchain := indicators.Donchain(highdata, lowdata, 40)
+
+	// Convert ma20 to []opts.LineData
+	donchainLineHighData := make([]opts.LineData, len(donchain.High))
+	for i, v := range donchain.High {
+		donchainLineHighData[i] = opts.LineData{Value: v}
+	}
+
+	// Add MA20 to the chart
+	donchainLineHigh := charts.NewLine()
+	donchainLineHigh.SetXAxis(x).AddSeries("High", donchainLineHighData)
+
+	kline.Overlap(donchainLineHigh)
+
+	// Convert ma20 to []opts.LineData
+	donchainLineLowData := make([]opts.LineData, len(donchain.Low))
+	for i, v := range donchain.Low {
+		donchainLineLowData[i] = opts.LineData{Value: v}
+	}
+
+	// Add MA20 to the chart
+	donchainLineLow := charts.NewLine()
+	donchainLineLow.SetXAxis(x).AddSeries("Low", donchainLineLowData)
+
+	kline.Overlap(donchainLineLow)
+
+	// Convert ma20 to []opts.LineData
+	donchainLineMidData := make([]opts.LineData, len(donchain.Mid))
+	for i, v := range donchain.Mid {
+		donchainLineMidData[i] = opts.LineData{Value: v}
+	}
+
+	// Add MA20 to the chart
+	donchainLineMid := charts.NewLine()
+	donchainLineMid.SetXAxis(x).AddSeries("Mid", donchainLineMidData)
+
+	kline.Overlap(donchainLineMid)
+
+	kline.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title: assetName + " " + duration + " " + "Chart",
+		}),
+		charts.WithXAxisOpts(opts.XAxis{
+			SplitNumber: 20,
+		}),
+		charts.WithYAxisOpts(opts.YAxis{
+			Scale: true,
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:       "inside",
+			Start:      50,
+			End:        100,
+			XAxisIndex: []int{0},
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:       "slider",
+			Start:      50,
+			End:        100,
+			XAxisIndex: []int{0},
+		}),
+	)
+
+	kline.SetXAxis(x).AddSeries("kline", y)
+	return kline
+}
+
+func klineWithSuperTrend() *charts.Kline {
+	kline := charts.NewKLine()
+
+	x := make([]string, 0)
+	y := make([]opts.KlineData, 0)
+	for i := 0; i < len(kd); i++ {
+		x = append(x, kd[i].date)
+		y = append(y, opts.KlineData{Value: kd[i].data})
+	}
+
+	// Calculate MA20 using talib
+	h := make([]float64, len(kd))
+	l := make([]float64, len(kd))
+	c := make([]float64, len(kd))
+	for i, k := range kd {
+		h[i] = k.data[3]
+		l[i] = k.data[2]
+		c[i] = k.data[1]
+
+	}
+
+	st, _ := indicators.SuperTrend(21, 3.0, h, l, c)
+
+	// stLineData := make([]opts.LineData, len(st.SuperTrend))
+	// for i, v := range st.SuperTrend {
+	// 	stLineData[i] = opts.LineData{Value: v}
+	// }
+
+	// stLine := charts.NewLine()
+	// stLine.SetXAxis(x).AddSeries("st", stLineData)
+
+	// kline.Overlap(stLine)
+
+	stupLineData := make([]opts.LineData, len(st.UpperBand))
+	for i, v := range st.SuperTrend {
+		stupLineData[i] = opts.LineData{Value: v}
+	}
+
+	stLineHigh := charts.NewLine()
+	stLineHigh.SetXAxis(x).AddSeries("st", stupLineData)
+
+	kline.Overlap(stLineHigh)
+
+	stlowLineData := make([]opts.LineData, len(st.LowerBand))
+	for i, v := range st.SuperTrend {
+		stlowLineData[i] = opts.LineData{Value: v}
+	}
+
+	stLineLow := charts.NewLine()
+	stLineLow.SetXAxis(x).AddSeries("st", stlowLineData)
+
+	kline.Overlap(stLineLow)
+
+	kline.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title: assetName + " " + duration + " " + "Chart",
+		}),
+		charts.WithXAxisOpts(opts.XAxis{
+			SplitNumber: 20,
+		}),
+		charts.WithYAxisOpts(opts.YAxis{
+			Scale: true,
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:       "inside",
+			Start:      50,
+			End:        100,
+			XAxisIndex: []int{0},
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:       "slider",
+			Start:      50,
+			End:        100,
+			XAxisIndex: []int{0},
+		}),
+	)
+
+	kline.SetXAxis(x).AddSeries("kline", y)
+	return kline
+}
+
 func klineWithChoppy() *charts.Kline {
 	kline := charts.NewKLine()
 
@@ -240,7 +406,7 @@ func klineWithChoppy() *charts.Kline {
 		lowdata[i] = k.data[2]
 		closedata[i] = k.data[1]
 	}
-	index := risk.ChoppySlice(closedata, highdata, lowdata)
+	index := risk.ChoppySlice(70, closedata, highdata, lowdata)
 	choppyEma13 := risk.ChoppyEma(index, 13)
 
 	choppyIndex := make([]opts.LineData, len(index))
@@ -299,6 +465,7 @@ func (CandleStickChart) CandleStickChart() {
 		// klineDataZoomInside(),
 		klineDataZoomBoth(),
 		klineWithMA(),
+		klineWithSuperTrend(),
 		klineWithChoppy(),
 	)
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 	chart "v1/pkg/charts"
+	data "v1/pkg/data/utils"
 	// "v1/pkg/analytics/metrics"
 	// "v1/pkg/db/models"
 	// p "v1/pkg/management/position"
@@ -147,32 +148,32 @@ func main() {
 	// query.GetCloseData("BTCUSDT", "4h")
 
 	//DBにデータを追加するための関数
-	// var assets_names []string = []string{"RUNEUSDT", "BTCUSDT", "AAVEUSDT", "ORDIUSDT", "SANUSDT", "LTCUSDT", "OKBUSDT", "ASTRUSDT", "MNTUSDT", "FTMUSDT", "SNXUSDT", "DYDXUSDT", "BONKUSDT", "LUNAUSDT", "MAGICUSDT", "XLMUSDT", "DOGEUSDT", "TRSUSDT", "LINKUSDT", "TONUSDT", "ISPUSDT", "BONKUSDT", "GMXUSDT", "INJUSDT", "ETHUSDT", "SOLUSDT", "AVAXUSDT", "MATICUSDT", "ATOMUSDT", "UNIUSDT", "ARBUSDT", "OPUSDT", "PEPEUSDT", "SEIUSDT", "SUIUSDT", "TIAUSDT", "WLDUSDT", "XRPUSDT", "NEARUSDT", "DOTUSDT", "APTUSDT", "XMRUSDT", "LDOUSDT", "FILUSDT", "KASUSDT", "STXUSDT", "RNDRUSDT", "GRTUSDT"}
+	var assets_names []string = []string{"RUNEUSDT", "BTCUSDT", "AAVEUSDT", "ORDIUSDT", "SANUSDT", "LTCUSDT", "OKBUSDT", "ASTRUSDT", "MNTUSDT", "FTMUSDT", "SNXUSDT", "DYDXUSDT", "BONKUSDT", "LUNAUSDT", "MAGICUSDT", "XLMUSDT", "DOGEUSDT", "TRSUSDT", "LINKUSDT", "TONUSDT", "ISPUSDT", "BONKUSDT", "GMXUSDT", "INJUSDT", "ETHUSDT", "SOLUSDT", "AVAXUSDT", "MATICUSDT", "ATOMUSDT", "UNIUSDT", "ARBUSDT", "OPUSDT", "PEPEUSDT", "SEIUSDT", "SUIUSDT", "TIAUSDT", "WLDUSDT", "XRPUSDT", "NEARUSDT", "DOTUSDT", "APTUSDT", "XMRUSDT", "LDOUSDT", "FILUSDT", "KASUSDT", "STXUSDT", "RNDRUSDT", "GRTUSDT"}
 
-	// var durations []string = []string{"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h"}
-	// paths := data.GetRelativePaths()
+	var durations []string = []string{"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h"}
+	paths := data.GetRelativePaths()
 
-	// groupedPaths := data.GroupAssetNamePaths(paths)
+	groupedPaths := data.GroupAssetNamePaths(paths)
 
-	// asset_data, err := data.LoadOHLCV(groupedPaths, assets_names, durations)
-	// if err != nil {
-	// 	log.Fatalf("Error loading OHLCV data: %v", err)
-	// }
+	asset_data, err := data.LoadOHLCV(groupedPaths, assets_names, durations)
+	if err != nil {
+		log.Fatalf("Error loading OHLCV data: %v", err)
+	}
 
-	// // // data.SaveAssetDatasCSV(asset_data)
+	// // data.SaveAssetDatasCSV(asset_data)
 
-	// // DBに接続する関数を呼び出し
-	// db, err := data.ConnectDB("./db/kline.db")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// // DBをクローズするのを遅延実行
-	// defer db.Close()
-	// // データをDBに保存する関数を呼び出し
-	// err = data.SaveAssetDatasDB(db, asset_data)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	// DBに接続する関数を呼び出し
+	db, err := data.ConnectDB("./db/kline.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// DBをクローズするのを遅延実行
+	defer db.Close()
+	// データをDBに保存する関数を呼び出し
+	err = data.SaveAssetDatasDB(db, asset_data)
+	if err != nil {
+		log.Fatal(err)
+	}
 	//ここまで
 
 	// for key, paths := range groupedPaths {

@@ -1,9 +1,9 @@
 
 
 
-
-assetName: "RNDRUSDT"
-
-duration: "1h"
-
-limit: 17000
+#バックテストの基本設定
+assetName: "ATOMUSDT"
+duration: "5m"
+start: "20200801"
+end: "20230730"
+simpleInterest: true

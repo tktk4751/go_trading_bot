@@ -3,7 +3,6 @@ package strategey
 import (
 	"fmt"
 	"log"
-	"math"
 	"sync"
 	"v1/pkg/analytics"
 	"v1/pkg/config"
@@ -26,7 +25,7 @@ func (df *DataFrameCandle) DonchainStrategy(period int, account *trader.Account)
 
 	signalEvents := execute.NewSignalEvents()
 
-	donchain := indicators.Donchain(df.Highs(), df.Low(), period)
+	donchain := indicators.Donchain(df.Highs(), df.Lows(), period)
 	// atr := talib.Atr(df.Highs(), df.Low(), df.Closes(), 21)
 
 	close := df.Closes()
@@ -64,148 +63,14 @@ func (df *DataFrameCandle) DonchainStrategy(period int, account *trader.Account)
 	return signalEvents
 
 }
-
-func (df *DataFrameCandle) OptimizeDonchainProfit() (performance float64, bestPeriod int) {
-	if df == nil {
-		return 0.0, 0
-	}
-
-	account := trader.NewAccount(1000)
-
-	bestPeriod = 40
-
-	for period := 5; period < 350; period++ {
-
-		signalEvents := df.DonchainStrategy(period, account)
-		if signalEvents == nil {
-			continue
-		}
-		profit := analytics.NetProfit(signalEvents)
-		if performance < profit {
-			performance = profit
-			bestPeriod = period
-
-		}
-
-	}
-
-	fmt.Println("最高利益", performance, "最適なピリオド", bestPeriod)
-
-	return performance, bestPeriod
-}
-
-func (df *DataFrameCandle) OptimizeDonchainLoss() (performance float64, bestPeriod int) {
-	if df == nil {
-		return 0.0, 0
-	}
-
-	account := trader.NewAccount(1000)
-
-	bestPeriod = 40
-	performance = math.MaxFloat64
-
-	for period := 5; period < 350; period++ {
-
-		signalEvents := df.DonchainStrategy(period, account)
-		if signalEvents == nil {
-			continue
-		}
-		loss := analytics.Loss(signalEvents)
-		if performance > loss {
-			performance = loss
-			bestPeriod = period
-
-		}
-
-	}
-
-	fmt.Println("最高利益", performance, "最適なピリオド", bestPeriod)
-
-	return performance, bestPeriod
-}
-
-func (df *DataFrameCandle) OptimizeDonchainWinRate() (performance float64, bestPeriod int) {
-	bestPeriod = 40
-
-	account := trader.NewAccount(1000)
-
-	for period := 10; period < 333; period++ {
-
-		signalEvents := df.DonchainStrategy(period, account)
-		if signalEvents == nil {
-			continue
-		}
-		winrate := analytics.WinRate(signalEvents)
-		if performance < winrate {
-			performance = winrate
-			bestPeriod = period
-
-		}
-
-	}
-
-	fmt.Println("最高勝率", performance*100, "% ", "最適なピリオド", bestPeriod)
-	return performance, bestPeriod
-}
-
-func (df *DataFrameCandle) OptimizeDonchainProfitFactor() (performance float64, bestPeriod int) {
-
-	account := trader.NewAccount(1000)
-	bestPeriod = 40
-
-	for period := 10; period < 333; period++ {
-
-		signalEvents := df.DonchainStrategy(period, account)
-		if signalEvents == nil {
-			continue
-		}
-		pf := analytics.ProfitFactor(signalEvents)
-		if performance < pf {
-			performance = pf
-			bestPeriod = period
-
-		}
-
-	}
-
-	fmt.Println("プロフィットファクター", performance, "最適なピリオド", bestPeriod)
-
-	return performance, bestPeriod
-}
-
-func (df *DataFrameCandle) OptimizeDonchainPayOffRatio() (performance float64, bestPeriod int) {
-
-	account := trader.NewAccount(1000)
-	bestPeriod = 40
-
-	for period := 10; period < 333; period++ {
-
-		signalEvents := df.DonchainStrategy(period, account)
-		if signalEvents == nil {
-			continue
-		}
-		pf := analytics.PayOffRatio(signalEvents)
-		if performance < pf {
-			performance = pf
-			bestPeriod = period
-
-		}
-
-	}
-
-	fmt.Println("ペイオフレシオ", performance, "最適なピリオド", bestPeriod)
-
-	return performance, bestPeriod
-}
-
 func (df *DataFrameCandle) OptimizeDonchainGoroutin() (performance float64, bestPeriod int) {
 
 	bestPeriod = 40
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	a := trader.NewAccount(1000)
-	marketDefault, _ := BuyAndHoldingStrategy(a)
+	// a := trader.NewAccount(1000)
+	// marketDefault, _ := BuyAndHoldingStrategy(a)
 
 	for period := 10; period < 333; period++ {
 		wg.Add(1)
@@ -222,9 +87,9 @@ func (df *DataFrameCandle) OptimizeDonchainGoroutin() (performance float64, best
 				return
 			}
 
-			if analytics.NetProfit(signalEvents) < marketDefault {
-				return
-			}
+			// if analytics.NetProfit(signalEvents) < marketDefault {
+			// 	return
+			// }
 
 			// if analytics.WinRate(signalEvents) < 0.45 {
 			// 	return
@@ -234,7 +99,7 @@ func (df *DataFrameCandle) OptimizeDonchainGoroutin() (performance float64, best
 			// 	return
 			// }
 
-			pf := analytics.ProfitFactor(signalEvents)
+			pf := analytics.SQN(signalEvents)
 			mu.Lock()
 			if performance < pf {
 				performance = pf
@@ -263,15 +128,14 @@ func RunBacktestDonchain() {
 
 	fmt.Println("--------------------------------------------")
 
-	// strategyName := getStrageyNameDonchain()
 	assetName := btcfg.AssetName
 	duration := btcfg.Dration
-
-	// limit := btcfg.Limit
+	start := btcfg.Start
+	end := btcfg.End
 
 	account := trader.NewAccount(1000)
 
-	df, _ := GetCandleData(assetName, duration)
+	df, _ := GetCsvDataFrame(assetName, duration, start, end)
 
 	performancePayOffRatio, bestPayOffRatioPeriod := df.OptimizeDonchainGoroutin()
 
