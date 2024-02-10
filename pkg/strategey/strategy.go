@@ -372,8 +372,6 @@ func Result(s *execute.SignalEvents) {
 
 	dd := analytics.MaxDrawdownPercent(s)
 
-	// d, _ := analytics.MaxDrawdown(s)
-
 	name := n.StrategyName + "_" + n.AssetName + "_" + n.Duration
 
 	fmt.Println("🌟", name, "🌟")
@@ -385,6 +383,7 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("最終残高", l, "USD", lr, "倍")
 	fmt.Println("純利益", analytics.TotalNetProfit(s))
 	fmt.Println("勝率", analytics.TotalWinRate(s)*100, "%")
+	fmt.Println("総トレード回数", analytics.TotalTrades(s))
 	fmt.Println("悲観的プロフィットファクター", analytics.Prr(s))
 	fmt.Println("オプティマルF", risk.OptimalF(s))
 	fmt.Println("ソルティノレシオ", analytics.SortinoRatio(s, 0.02))
@@ -421,7 +420,7 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("")
 	fmt.Println("トータル総利益", analytics.TotalProfit(s))
 	fmt.Println("トータル総損失", analytics.TotalLoss(s))
-	fmt.Println("トータルトレード回数", analytics.TotalTrades(s))
+
 	fmt.Println("トータル勝ちトレード回数", analytics.TotalWinningTrades(s))
 	fmt.Println("トータル負けトレード回数", analytics.TotalLosingTrades(s))
 	fmt.Println("プロフィットファクター", analytics.ProfitFactor(s))

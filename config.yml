@@ -2,9 +2,9 @@
 
 
 #バックテストの基本設定
-assetName: "SOLUSDT"
+assetName: "LINKUSDT"
 duration: "15m"
-start: "20220230"
-end: "20230110"
+start: ""
+end: ""
 simpleInterest: false
 positionPersentage: 0.9

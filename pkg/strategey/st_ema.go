@@ -2,6 +2,7 @@ package strategey
 
 import (
 	"fmt"
+	"log"
 	"runtime"
 	"sync"
 	"v1/pkg/analytics"
@@ -11,51 +12,48 @@ import (
 	"v1/pkg/trader"
 
 	"github.com/c-bata/goptuna"
+
 	"github.com/c-bata/goptuna/tpe"
+
+	"github.com/markcheno/go-talib"
 )
 
-func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float64, account *trader.Account, simple bool) *execute.SignalEvents {
+func (df *DataFrameCandle) StEmaStrategy(period1, period2 int, account *trader.Account, simple bool) *execute.SignalEvents {
 
-	var StrategyName = "SUPERTREND_CHOPPY"
-	// var err error
-
+	var StrategyName = "ST_EMA"
 	lenCandles := len(df.Candles)
-
-	if lenCandles <= atrPeriod {
+	if lenCandles <= period1 || lenCandles <= period2 {
 		return nil
 	}
-
 	signalEvents := execute.NewSignalEvents()
 
 	h := df.Highs()
 	l := df.Lows()
 	c := df.Closes()
-	// hlc3 := df.Hlc3()
 
-	superTrend, _ := indicators.SuperTrend(atrPeriod, factor, h, l, c)
-
-	// stUp := superTrend.UpperBand
-	// stLow := superTrend.UpperBand
-	st := superTrend.SuperTrend
-
-	// rsi := talib.Rsi(hlc3, 14)
+	emaValue1 := talib.Ema(df.Hlc3(), period1)
+	emaValue2 := talib.Ema(df.Hlc3(), period2)
+	// rsi := talib.Rsi(df.Hlc3(), 14)
 
 	buySize := 0.0
 	buyPrice := 0.0
 	slRatio := 0.9
-
 	index := risk.ChoppySlice(70, c, h, l)
 	choppyEma := risk.ChoppyEma(index, 5)
 
-	isHolding := false
+	// hlc3 := df.Hlc3()
 
-	for i := 1; i < len(choppyEma); i++ {
+	st, _ := indicators.SuperTrend(50, 5.5, h, l, c)
 
-		if i < atrPeriod {
-			// fmt.Printf("Skipping iteration %d due to insufficient data.\n", i)
+	isBuyHolding := false
+	for i := 1; i < lenCandles; i++ {
+		if i < period1 || i < period2 || i >= len(choppyEma) {
 			continue
 		}
-		if (c[i-1] < st[i-1] && c[i] >= st[i]) && choppyEma[i] > 50 && !isHolding {
+		buyCondition := c[i] > st.SuperTrend[i]
+		sellCondition := c[i] < st.SuperTrend[i]
+
+		if emaValue1[i-1] < emaValue2[i-1] && emaValue1[i] >= emaValue2[i] && choppyEma[i] > 50 && buyCondition && !isBuyHolding {
 
 			// fee := 1 - 0.01
 			if simple {
@@ -64,7 +62,7 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 				accountBalance := account.GetBalance()
 
 				signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
-				isHolding = true
+				isBuyHolding = true
 
 			} else {
 				buySize = account.TradeSize(riskSize) / df.Candles[i].Close
@@ -72,23 +70,22 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 				accountBalance := account.GetBalance()
 				if account.Buy(df.Candles[i].Close, buySize) {
 					signalEvents.Buy(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
-					isHolding = true
+					isBuyHolding = true
 				}
 			}
-
 		}
-		if ((c[i-1] > st[i-1] && c[i] <= st[i]) || (c[i] <= buyPrice*slRatio)) && isHolding {
+		if emaValue1[i-1] > emaValue2[i-1] && emaValue1[i] <= emaValue2[i] || (df.Candles[i].Close <= buyPrice*slRatio) && sellCondition && isBuyHolding {
 			if simple {
 				accountBalance := 1000.0
 
 				signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
-				isHolding = false
+				isBuyHolding = false
 
 			} else {
 				accountBalance := account.GetBalance()
 				if account.Sell(df.Candles[i].Close) {
 					signalEvents.Sell(StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
-					isHolding = false
+					isBuyHolding = false
 					buySize = 0.0
 					account.PositionSize = buySize
 
@@ -96,34 +93,25 @@ func (df *DataFrameCandle) SuperTrendChoppyStrategy(atrPeriod int, factor float6
 			}
 		}
 	}
-
-	// fmt.Println(signalEvents)
 	return signalEvents
 }
 
-func (df *DataFrameCandle) OptimizeSuperTrend2() (performance float64, bestAtrPeriod int, bestFactor float64) {
+func (df *DataFrameCandle) OptimizeStEma2() (performance float64, bestPeriod1 int, bestPeriod2 int) {
 
 	// オブジェクティブ関数を定義
 	objective := func(trial goptuna.Trial) (float64, error) {
 		// ハイパーパラメータの候補をサンプリング
-		atrPeriod, _ := trial.SuggestStepInt("atrPeriod", 10, 60, 2)
-		factorInt, _ := trial.SuggestInt("factor", 4, 16)
-		factor := float64(factorInt) * 0.5
+		period1, _ := trial.SuggestStepInt("period1", 3, 13, 1)
+		period2, _ := trial.SuggestStepInt("period2", 13, 89, 1)
 
 		account := trader.NewAccount(1000) // Move this line inside the objective function
-
-		marketDefault, _ := BuyAndHoldingStrategy(account)
-		signalEvents := df.SuperTrendChoppyStrategy(atrPeriod, factor, account, simple)
+		signalEvents := df.StEmaStrategy(period1, period2, account, simple)
 
 		if signalEvents == nil {
 			return 0.0, nil
 		}
 
-		if analytics.TotalTrades(signalEvents) < 30 {
-			return 0.0, nil
-		}
-
-		if analytics.TotalNetProfit(signalEvents) < marketDefault {
+		if analytics.TotalTrades(signalEvents) < 10 {
 			return 0.0, nil
 		}
 
@@ -153,53 +141,52 @@ func (df *DataFrameCandle) OptimizeSuperTrend2() (performance float64, bestAtrPe
 	v, _ := study.GetBestValue()
 	params, _ := study.GetBestParams()
 	performance = v
-	bestAtrPeriod = params["atrPeriod"].(int)
-	bestFactor = float64(params["factor"].(int)) * 0.5
+	bestPeriod1 = params["period1"].(int)
+	bestPeriod2 = params["period2"].(int)
 
-	fmt.Println("最高のパフォーマンス", performance, "最適なATR", bestAtrPeriod, "最適なファクター", bestFactor)
+	fmt.Println("最高パフォーマンス", performance, "最適な短期線", bestPeriod1, "最適な長期線", bestPeriod2)
 
-	return performance, bestAtrPeriod, bestFactor
-
+	return performance, bestPeriod1, bestPeriod2
 }
 
-func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPeriod int, bestFactor float64) {
+func (df *DataFrameCandle) OptimizeStEma() (performance float64, bestPeriod1 int, bestPeriod2 int) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	bestAtrPeriod = 21
-	bestFactor = 3.0
+	bestPeriod1 = 5
+	bestPeriod2 = 21
 
-	limit := 1000
+	limit := 3000
 	slots := make(chan struct{}, limit)
 
-	a := trader.NewAccount(1000)
-	marketDefault, _ := BuyAndHoldingStrategy(a)
+	// a := trader.NewAccount(1000)
+	// marketDefault, _ := BuyAndHoldingStrategy(a)
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-
-	for atrPeriod := 13; atrPeriod < 60; atrPeriod += 2 {
-		for factor := 2.0; factor < 8.0; factor += 0.5 {
+	for period1 := 3; period1 < 13; period1 += 1 {
+		for period2 := 5; period2 < 34; period2 += 1 {
 
 			wg.Add(1)
 			slots <- struct{}{}
 
-			go func(atrPeriod int, factor float64) {
+			go func(period1 int, period2 int) {
+
 				defer wg.Done()
 				account := trader.NewAccount(1000) // Move this line inside the goroutine
-				signalEvents := df.SuperTrendChoppyStrategy(atrPeriod, factor, account, simple)
+				signalEvents := df.StEmaStrategy(period1, period2, account, simple)
 
 				if signalEvents == nil {
 					return
 				}
 
-				if analytics.TotalTrades(signalEvents) < 30 {
+				if analytics.TotalTrades(signalEvents) < 15 {
 					<-slots
 					return
 				}
 
-				if analytics.TotalNetProfit(signalEvents) < marketDefault {
-					<-slots
-					return
-				}
+				// if analytics.NetProfit(signalEvents) < marketDefault {
+				// 	<-slots
+				// 	return
+				// }
 
 				// if analytics.SQN(signalEvents) < 3.2 {
 				// 	<-slots
@@ -208,79 +195,89 @@ func (df *DataFrameCandle) OptimizeSuperTrend() (performance float64, bestAtrPer
 
 				// if analytics.PayOffRatio(signalEvents) < 1 {
 				// <-slots
+
 				// 	return
 				// }
 
-				// p := analytics.SortinoRatio(signalEvents, 0.02)
-				p := analytics.SQN(signalEvents)
+				p := analytics.SortinoRatio(signalEvents, 0.02)
+				// p := analytics.Prr(signalEvents)
 				mu.Lock()
 				if performance == 0 || performance < p {
 					performance = p
-					bestAtrPeriod = atrPeriod
-					bestFactor = factor
+					bestPeriod1 = period1
+					bestPeriod2 = period2
 
 				}
 				<-slots
 				mu.Unlock()
 
-			}(atrPeriod, factor)
+			}(period1, period2)
 
 		}
-
 	}
 
 	wg.Wait()
 
-	fmt.Println("最高のパフォーマンス", performance, "最適なATR", bestAtrPeriod, "最適なファクター", bestFactor)
+	if bestPeriod1 > bestPeriod2 {
+		log.Fatalf("数値が逆転しています")
+	}
 
-	return performance, bestAtrPeriod, bestFactor
+	fmt.Println("最高パフォーマンス", performance, "最適な短期線", bestPeriod1, "最適な長期線", bestPeriod2)
+
+	return performance, bestPeriod1, bestPeriod2
 }
 
-func RunSTOptimize() {
+func RunStEmaOptimize() {
 
 	df, account, _ := RadyBacktest()
 
-	performance, bestAtrPeriod, bestFactor := df.OptimizeSuperTrend()
+	performance, bestPeriod1, bestPeriod2 := df.OptimizeStEma()
 
 	if performance > 0 {
 
-		df.Signal = df.SuperTrendChoppyStrategy(bestAtrPeriod, bestFactor, account, simple)
+		df.Signal = df.StEmaStrategy(bestPeriod1, bestPeriod2, account, simple)
+		if df.Signal.Signals == nil {
+			fmt.Println("トレード結果がありません")
+		}
 		Result(df.Signal)
 
 	} else {
 		fmt.Println("💸マイナスです")
-		df.Signal = df.SuperTrendChoppyStrategy(bestAtrPeriod, bestFactor, account, simple)
+		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, account, simple)
 		Result(df.Signal)
 
 	}
 
 }
 
-func RunSTOptimize2() {
+func RunStEmaOptimize2() {
 
 	df, account, _ := RadyBacktest()
 
-	performance, bestAtrPeriod, bestFactor := df.OptimizeSuperTrend2()
+	performance, bestPeriod1, bestPeriod2 := df.OptimizeStEma2()
 
 	if performance > 0 {
 
-		df.Signal = df.SuperTrendChoppyStrategy(bestAtrPeriod, bestFactor, account, simple)
+		df.Signal = df.StEmaStrategy(bestPeriod1, bestPeriod2, account, simple)
+		if df.Signal.Signals == nil {
+			fmt.Println("トレード結果がありません")
+		}
 		Result(df.Signal)
 
 	} else {
 		fmt.Println("💸マイナスです")
-		df.Signal = df.SuperTrendChoppyStrategy(bestAtrPeriod, bestFactor, account, simple)
+		df.Signal = df.EmaChoppyStrategy(bestPeriod1, bestPeriod2, account, simple)
 		Result(df.Signal)
 
 	}
 
 }
 
-func SuperTrendBacktest() {
+func StEmaBacktest() {
 
 	df, account, _ := RadyBacktest()
 
-	df.Signal = df.SuperTrendChoppyStrategy(26, 3.5, account, simple)
+	df.Signal = df.StEmaStrategy(9, 47, account, simple)
 	if df.Signal.Signals == nil {
 		fmt.Println("トレード結果がありません")
 	}
