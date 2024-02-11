@@ -10,8 +10,8 @@ func main() {
 
 	start := time.Now()
 
-	strategey.RunEmaOptimize()
-	strategey.RunSTOptimize()
+	// strategey.RunEmaOptimize()
+	// strategey.RunSTOptimize()
 	strategey.RunEmaRsiOptimize()
 	// strategey.RunDonchainOptimize()
 

@@ -42,7 +42,7 @@ for i := 1; i < len(choppyEma); i++ {
 
 			} else {
 				accountBalance := account.GetBalance()
-				if account.Sell(df.Candles[i].Close) {
+				if account.Exit(df.Candles[i].Close) {
 					// Closeメソッドを呼ぶ
 					signalEvents.Close(currentSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 					isHolding = false

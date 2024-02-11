@@ -2,9 +2,9 @@
 
 
 #バックテストの基本設定
-assetName: "LINKUSDT"
-duration: "15m"
-start: ""
-end: ""
+assetName: "AVAXUSDT"
+duration: "1h"
+start: "20220101"
+end: "20230101"
 simpleInterest: false
 positionPersentage: 0.9

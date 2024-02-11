@@ -82,12 +82,12 @@ func LongProfit(s *execute.SignalEvents) float64 {
 	}
 	for _, signal := range s.Signals {
 
-		if signal.Side != "BUY" && signal.Side != "SELL" {
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
 			return 0.0
 		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
+		} else if signal.Side == "CLOSE" && buyPrice != 0 {
 			if signal.Price > buyPrice {
 				profit += (signal.Price - buyPrice) * signal.Size
 			}
@@ -111,12 +111,12 @@ func LongLoss(s *execute.SignalEvents) float64 {
 	}
 	for _, signal := range s.Signals {
 
-		if signal.Side != "BUY" && signal.Side != "SELL" {
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
 			return 0.0
 		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
+		} else if signal.Side == "CLOSE" && buyPrice != 0 {
 			if signal.Price < buyPrice {
 				loss += (buyPrice - signal.Price) * signal.Size
 			}
@@ -139,12 +139,12 @@ func ShortProfit(s *execute.SignalEvents) float64 {
 	}
 	for _, signal := range s.Signals {
 
-		if signal.Side != "BUY" && signal.Side != "SELL" {
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
 			return 0.0
 		}
 		if signal.Side == "SELL" {
 			sellPrice = signal.Price
-		} else if signal.Side == "BUY" && sellPrice != 0 {
+		} else if signal.Side == "CLOSE" && sellPrice != 0 {
 			if signal.Price < sellPrice {
 				profit += (sellPrice - signal.Price) * signal.Size
 			}
@@ -168,12 +168,12 @@ func ShortLoss(s *execute.SignalEvents) float64 {
 	}
 	for _, signal := range s.Signals {
 
-		if signal.Side != "BUY" && signal.Side != "SELL" {
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
 			return 0.0
 		}
 		if signal.Side == "SELL" {
 			sellPrice = signal.Price
-		} else if signal.Side == "BUY" && sellPrice != 0 {
+		} else if signal.Side == "CLOSE" && sellPrice != 0 {
 			if signal.Price > sellPrice {
 				loss += (signal.Price - sellPrice) * signal.Size
 			}

@@ -126,13 +126,13 @@ func TotalWinRate(s *execute.SignalEvents) float64 {
 		currentSignal := s.Signals[i]
 		nextSignal := s.Signals[i+1]
 
-		if currentSignal.Side == "BUY" && nextSignal.Side == "SELL" {
+		if currentSignal.Side == "BUY" && nextSignal.Side == "CLOSE" {
 			if nextSignal.Price > currentSignal.Price {
 				profitCount++
 			} else if nextSignal.Price < currentSignal.Price {
 				lossCount++
 			}
-		} else if currentSignal.Side == "SELL" && nextSignal.Side == "BUY" {
+		} else if currentSignal.Side == "SELL" && nextSignal.Side == "CLOSE" {
 			if nextSignal.Price < currentSignal.Price {
 				profitCount++
 			} else if nextSignal.Price > currentSignal.Price {

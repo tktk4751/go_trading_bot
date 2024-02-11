@@ -22,6 +22,25 @@ import (
 // 	return totalTrades
 // }
 
+// func TotalTrades(s *execute.SignalEvents) int {
+
+// 	if s == nil {
+// 		return 0
+// 	}
+// 	var totalTrades int
+
+// 	for i := 0; i < len(s.Signals)-1; i++ {
+// 		currentSignal := s.Signals[i]
+// 		nextSignal := s.Signals[i+1]
+
+// 		if currentSignal.Side != nextSignal.Side {
+// 			totalTrades++
+// 		}
+// 	}
+
+// 	return totalTrades
+// }
+
 func TotalTrades(s *execute.SignalEvents) int {
 
 	if s == nil {
@@ -31,9 +50,8 @@ func TotalTrades(s *execute.SignalEvents) int {
 
 	for i := 0; i < len(s.Signals)-1; i++ {
 		currentSignal := s.Signals[i]
-		nextSignal := s.Signals[i+1]
 
-		if currentSignal.Side != nextSignal.Side {
+		if currentSignal.Side == "CLOSE" {
 			totalTrades++
 		}
 	}

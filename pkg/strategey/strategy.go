@@ -441,7 +441,7 @@ func Result(s *execute.SignalEvents) {
 	fmt.Println("1トレードの最大損失と日時", ml, mt)
 	// fmt.Println("バルサラの破産確率", analytics.BalsaraAxum(s))
 
-	// fmt.Println(s)
+	fmt.Println(s)
 
 	fmt.Println("--------------------------------------------")
 	fmt.Println("")
