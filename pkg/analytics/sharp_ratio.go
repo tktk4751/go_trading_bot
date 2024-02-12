@@ -23,23 +23,6 @@ func stdDev(data []float64) float64 {
 	variance := sqDiffSum / float64(len(data)-1)
 	return math.Sqrt(variance)
 }
-
-// func calculateReturns(s *execute.SignalEvents) []float64 {
-// 	var returns []float64
-// 	var buyPrice float64
-
-// 	for _, signal := range s.Signals {
-// 		if signal.Side == "BUY" {
-// 			buyPrice = signal.Price
-// 		} else if signal.Side == "SELL" && buyPrice != 0 {
-// 			returns = append(returns, (signal.Price-buyPrice)/buyPrice)
-// 			buyPrice = 0 // Reset buy price after a sell
-// 		}
-// 	}
-
-// 	return returns
-// }
-
 func SharpeRatio(s *execute.SignalEvents, riskFreeRate float64) float64 {
 
 	if s == nil {

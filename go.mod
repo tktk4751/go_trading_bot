@@ -38,6 +38,7 @@ require (
 	github.com/ramya-rao-a/go-outline v0.0.0-20210608161538-9736a4bde949 // indirect
 	github.com/rivo/uniseg v0.4.6 // indirect
 	github.com/rocketlaunchr/dataframe-go v0.0.0-20211025052708-a1030444159b // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	golang.org/x/crypto v0.18.0 // indirect

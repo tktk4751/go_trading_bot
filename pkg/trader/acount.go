@@ -33,11 +33,13 @@ func (a *Account) Entry(price, size float64) bool {
 	a.PositionSize = size
 	return true
 }
+
+// このコードに問題あり
 func (a *Account) Exit(price float64) bool {
 	if a.PositionSize <= 0 {
 		return false
 	}
-	a.Balance += price * a.PositionSize
+	a.Balance += a.PositionSize * price
 	a.PositionSize = 0.0
 	return true
 }

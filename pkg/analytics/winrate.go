@@ -70,7 +70,7 @@ func WinRate(s *execute.SignalEvents) float64 {
 		currentSignal := s.Signals[i]
 		nextSignal := s.Signals[i+1]
 
-		if currentSignal.Side == "BUY" && nextSignal.Side == "SELL" {
+		if currentSignal.Side == "BUY" && nextSignal.Side == "CLOSE" {
 			if nextSignal.Price > currentSignal.Price {
 				profitCount++
 			} else if nextSignal.Price < currentSignal.Price {
@@ -98,7 +98,7 @@ func ShortWinRate(s *execute.SignalEvents) float64 {
 		currentSignal := s.Signals[i]
 		nextSignal := s.Signals[i+1]
 
-		if currentSignal.Side == "SELL" && nextSignal.Side == "BUY" {
+		if currentSignal.Side == "SELL" && nextSignal.Side == "CLOSE" {
 			if nextSignal.Price < currentSignal.Price {
 				profitCount++
 			} else if nextSignal.Price > currentSignal.Price {

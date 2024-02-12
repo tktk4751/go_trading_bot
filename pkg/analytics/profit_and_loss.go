@@ -381,7 +381,7 @@ func PLSlice(s *execute.SignalEvents) []float64 {
 	}
 	for _, signal := range s.Signals {
 
-		if signal.Side != "BUY" && signal.Side != "SELL" {
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
 			return nil
 		}
 		if signal.Side == "BUY" {
@@ -390,7 +390,7 @@ func PLSlice(s *execute.SignalEvents) []float64 {
 			if sellPrice != 0 {
 				pl = append(pl, (sellPrice-buyPrice)*signal.Size)
 				// reset the sell price
-				sellPrice = 0
+				buyPrice = 0
 			}
 		}
 		if signal.Side == "SELL" {
@@ -399,11 +399,10 @@ func PLSlice(s *execute.SignalEvents) []float64 {
 			if buyPrice != 0 {
 				pl = append(pl, (sellPrice-buyPrice)*signal.Size)
 				// reset the buy price
-				buyPrice = 0
+				sellPrice = 0
 			}
 		}
 	}
-
 	return pl
 }
 
@@ -422,7 +421,7 @@ func TotalProfitSlice(s *execute.SignalEvents) []float64 {
 	}
 	for _, signal := range s.Signals {
 
-		if signal.Side != "BUY" && signal.Side != "SELL" {
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
 			return nil
 		}
 		if signal.Side == "BUY" {

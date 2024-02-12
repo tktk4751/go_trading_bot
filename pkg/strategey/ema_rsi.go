@@ -65,11 +65,12 @@ func (df *DataFrameCandle) EmaRsiStrategy(period1 int, account *trader.Account, 
 				isBuyHolding = true
 
 			} else {
-				buySize = account.TradeSize(riskSize) / df.Candles[i].Close
+
 				buyPrice = c[i]
+				buySize = account.TradeSize(riskSize) / c[i]
 				buySignalId = uuid.New()
 				accountBalance := account.GetBalance()
-				if account.Entry(df.Candles[i].Close, buySize) {
+				if account.Entry(buyPrice, buySize) {
 					signalEvents.Buy(buySignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 					isSellHolding = false
 					isBuyHolding = true
@@ -97,17 +98,16 @@ func (df *DataFrameCandle) EmaRsiStrategy(period1 int, account *trader.Account, 
 				sellSize = account.SimpleTradeSize(1)
 				sellPrice = c[i]
 				sellSignalId = uuid.New()
-				accountBalance := account.GetBalance()
-				signalEvents.Sell(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, accountBalance, false)
+				signalEvents.Sell(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, account.GetBalance(), false)
 				isBuyHolding = false
 				isSellHolding = true
 			} else {
-				sellSize = account.TradeSize(riskSize) / df.Candles[i].Close
 				sellPrice = c[i]
+				sellSize = account.TradeSize(riskSize) / c[i]
+
 				sellSignalId = uuid.New()
-				accountBalance := account.GetBalance()
-				if account.Entry(df.Candles[i].Close, sellSize) {
-					signalEvents.Sell(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, accountBalance, false)
+				if account.Entry(sellPrice, sellSize) {
+					signalEvents.Sell(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, account.GetBalance(), false)
 					isBuyHolding = false
 					isSellHolding = true
 
@@ -118,13 +118,11 @@ func (df *DataFrameCandle) EmaRsiStrategy(period1 int, account *trader.Account, 
 
 			if (ema1[i-1] > c[i-1] && ema1[i] <= c[i] || (c[i] <= buyPrice*longSlRatio)) && isSellHolding {
 				if simple {
-					accountBalance := account.GetBalance()
-					signalEvents.Close(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, accountBalance, false)
+					signalEvents.Close(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, account.GetBalance(), false)
 					isSellHolding = false
 				} else {
 					if account.Exit(c[i]) {
-						accountBalance := account.GetBalance()
-						signalEvents.Close(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, accountBalance, false)
+						signalEvents.Close(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, account.GetBalance(), false)
 						isSellHolding = false
 						sellSize = 0
 					}
