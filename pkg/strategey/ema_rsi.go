@@ -53,80 +53,58 @@ func (df *DataFrameCandle) EmaRsiStrategy(period1 int, account *trader.Account, 
 
 		if ema1[i] < c[i] && rsi[i-1] < 30 && rsi[i] >= 30 && choppyEma[i] > 50 && !isBuyHolding {
 
-			// fee := 1 - 0.01
-			if simple {
-				buySize = account.SimpleTradeSize(1)
-				buyPrice = c[i]
-				accountBalance := account.GetBalance()
-				buySignalId = uuid.New()
-
+			buyPrice = c[i]
+			buySize = account.TradeSize(riskSize) / c[i]
+			buySignalId = uuid.New()
+			accountBalance := account.GetBalance()
+			if account.Entry("BUY", buyPrice, buySize, 0.01) {
 				signalEvents.Buy(buySignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isSellHolding = false
 				isBuyHolding = true
 
-			} else {
-
-				buyPrice = c[i]
-				buySize = account.TradeSize(riskSize) / c[i]
-				buySignalId = uuid.New()
-				accountBalance := account.GetBalance()
-				if account.Entry(buyPrice, buySize) {
-					signalEvents.Buy(buySignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
-					isSellHolding = false
-					isBuyHolding = true
-
-				}
 			}
+
 		}
-		if (ema1[i-1] < c[i-1] && ema1[i] >= c[i] || c[i] <= sellPrice*shortSlRatio) && isBuyHolding {
-			if simple {
+		if (ema1[i] > c[i] || c[i] <= sellPrice*shortSlRatio) && isBuyHolding {
+
+			if account.Exit("BUY", c[i]) {
 				accountBalance := account.GetBalance()
 				signalEvents.Close(buySignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, accountBalance, false)
 				isBuyHolding = false
-			} else {
-				if account.Exit(c[i]) {
-					// accountBalance := account.GetBalance()
-					signalEvents.Close(buySignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, buySize, account.GetBalance(), false)
-					isBuyHolding = false
-					buySize = 0.0
-				}
+				isSellHolding = false
+				buySize = 0.0
+				account.PositionSize = buySize
 			}
-		}
 
+		}
+		//SELLのエントリーかエグジットに問題がある｡
 		if ema1[i] > c[i] && rsi[i-1] > 75 && rsi[i] <= 75 && choppyEma[i] > 50 && !isSellHolding {
-			if simple {
-				sellSize = account.SimpleTradeSize(1)
-				sellPrice = c[i]
-				sellSignalId = uuid.New()
-				signalEvents.Sell(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, account.GetBalance(), false)
+
+			sellPrice = c[i]
+			sellSize = account.TradeSize(riskSize) / c[i]
+			accountBalance := account.GetBalance()
+			sellSignalId = uuid.New()
+			if account.Entry("SELL", sellPrice, sellSize, 0.01) {
+				signalEvents.Sell(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, accountBalance, false)
 				isBuyHolding = false
 				isSellHolding = true
-			} else {
-				sellPrice = c[i]
-				sellSize = account.TradeSize(riskSize) / c[i]
 
-				sellSignalId = uuid.New()
-				if account.Entry(sellPrice, sellSize) {
-					signalEvents.Sell(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, account.GetBalance(), false)
-					isBuyHolding = false
-					isSellHolding = true
+				// account.PositionSize = buySize
 
-					account.PositionSize = buySize
-
-				}
 			}
 
-			if (ema1[i-1] > c[i-1] && ema1[i] <= c[i] || (c[i] <= buyPrice*longSlRatio)) && isSellHolding {
-				if simple {
-					signalEvents.Close(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, account.GetBalance(), false)
+			if (ema1[i] < c[i] || (c[i] <= buyPrice*longSlRatio)) && isSellHolding {
+
+				if account.Exit("SELL", c[i]) {
+					sellSize = account.PositionSize
+					accountBalance := account.GetBalance()
+					signalEvents.Close(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, accountBalance, false)
 					isSellHolding = false
-				} else {
-					if account.Exit(c[i]) {
-						signalEvents.Close(sellSignalId, StrategyName, df.AssetName, df.Duration, df.Candles[i].Date, df.Candles[i].Close, sellSize, account.GetBalance(), false)
-						isSellHolding = false
-						sellSize = 0
-					}
+					isBuyHolding = false
+					sellSize = 0
+					account.PositionSize = sellSize
 				}
+
 			}
 		}
 	}
@@ -174,7 +152,7 @@ func (df *DataFrameCandle) OptimizeEmaRsi2() (performance float64, bestPeriod in
 	}
 
 	// ベイズ最適化の実行
-	err = study.Optimize(objective, 1000)
+	err = study.Optimize(objective, 500)
 	if err != nil {
 		panic(err)
 	}
@@ -192,13 +170,13 @@ func (df *DataFrameCandle) OptimizeEmaRsi2() (performance float64, bestPeriod in
 
 func (df *DataFrameCandle) OptimizeEmaRsi() (performance float64, bestPeriod int) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	bestPeriod = 100
+	bestPeriod = 10
 
 	limit := 1000
 	slots := make(chan struct{}, limit)
 
-	a := trader.NewAccount(1000)
-	marketDefault, _ := BuyAndHoldingStrategy(a)
+	// a := trader.NewAccount(1000)
+	// marketDefault, _ := BuyAndHoldingStrategy(a)
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -222,10 +200,10 @@ func (df *DataFrameCandle) OptimizeEmaRsi() (performance float64, bestPeriod int
 				return
 			}
 
-			if analytics.TotalNetProfit(signalEvents) < marketDefault {
-				<-slots
-				return
-			}
+			// if analytics.TotalNetProfit(signalEvents) < marketDefault {
+			// 	<-slots
+			// 	return
+			// }
 
 			// if analytics.SQN(signalEvents) < 3.2 {
 			// 	<-slots
@@ -243,6 +221,7 @@ func (df *DataFrameCandle) OptimizeEmaRsi() (performance float64, bestPeriod int
 			mu.Lock()
 			if performance == 0 || performance < p {
 				performance = p
+				fmt.Println(performance)
 				bestPeriod = period
 
 			}

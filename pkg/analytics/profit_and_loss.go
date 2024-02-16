@@ -375,6 +375,7 @@ func PLSlice(s *execute.SignalEvents) []float64 {
 	var pl []float64 // profit or loss slice
 	var buyPrice float64
 	var sellPrice float64
+	var lastSide string
 
 	if s.Signals == nil || len(s.Signals) == 0 {
 		return nil
@@ -386,25 +387,74 @@ func PLSlice(s *execute.SignalEvents) []float64 {
 		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-			// if there is a previous sell price, calculate the profit or loss
-			if sellPrice != 0 {
-				pl = append(pl, (sellPrice-buyPrice)*signal.Size)
-				// reset the sell price
-				buyPrice = 0
-			}
+			lastSide = "BUY"
+
 		}
 		if signal.Side == "SELL" {
 			sellPrice = signal.Price
-			// if there is a previous buy price, calculate the profit or loss
-			if buyPrice != 0 {
+			lastSide = "SELL"
+
+		}
+		if signal.Side == "CLOSE" {
+			if lastSide == "BUY" {
+				pl = append(pl, (sellPrice-buyPrice)*signal.Size)
+				buyPrice = 0
+			}
+			if lastSide == "SELL" {
 				pl = append(pl, (sellPrice-buyPrice)*signal.Size)
 				// reset the buy price
 				sellPrice = 0
 			}
+			lastSide = ""
 		}
 	}
 	return pl
 }
+
+// func TotalProfitSlice(s *execute.SignalEvents) []float64 {
+// 	if s == nil {
+// 		return nil
+// 	}
+// 	var profit []float64 // total profit slice
+// 	var buyPrice float64
+// 	var sellPrice float64
+// 	var longProfit float64
+// 	var shortProfit float64
+
+// 	if s.Signals == nil || len(s.Signals) == 0 {
+// 		return nil
+// 	}
+// 	for _, signal := range s.Signals {
+
+// 		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
+// 			return nil
+// 		}
+// 		if signal.Side == "BUY" {
+// 			buyPrice = signal.Price
+// 			// if there is a previous sell price, calculate the short profit
+// 			if sellPrice != 0 {
+// 				shortProfit = (sellPrice - buyPrice) * signal.Size
+// 				profit = append(profit, shortProfit)
+// 				// reset the sell price and short profit
+// 				sellPrice = 0
+// 				shortProfit = 0
+// 			}
+// 		}
+// 		if signal.Side == "SELL" {
+// 			sellPrice = signal.Price
+// 			// if there is a previous buy price, calculate the long profit
+// 			if buyPrice != 0 {
+// 				longProfit = (sellPrice - buyPrice) * signal.Size
+// 				profit = append(profit, longProfit)
+// 				// reset the buy price and long profit
+// 				buyPrice = 0
+// 				longProfit = 0
+// 			}
+// 		}
+// 	}
+
+// 	return profit
+// }
 
 func TotalProfitSlice(s *execute.SignalEvents) []float64 {
 	if s == nil {
@@ -415,6 +465,7 @@ func TotalProfitSlice(s *execute.SignalEvents) []float64 {
 	var sellPrice float64
 	var longProfit float64
 	var shortProfit float64
+	var lastSide string
 
 	if s.Signals == nil || len(s.Signals) == 0 {
 		return nil
@@ -426,26 +477,35 @@ func TotalProfitSlice(s *execute.SignalEvents) []float64 {
 		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-			// if there is a previous sell price, calculate the short profit
-			if sellPrice != 0 {
-				shortProfit = (sellPrice - buyPrice) * signal.Size
-				profit = append(profit, shortProfit)
-				// reset the sell price and short profit
-				sellPrice = 0
-				shortProfit = 0
-			}
+			lastSide = "BUY"
 		}
 		if signal.Side == "SELL" {
 			sellPrice = signal.Price
-			// if there is a previous buy price, calculate the long profit
-			if buyPrice != 0 {
-				longProfit = (sellPrice - buyPrice) * signal.Size
+			lastSide = "SELL"
+		}
+
+		if signal.Side == "CLOSE" {
+			// if the last opened order side is BUY, calculate the long profit
+			if lastSide == "BUY" {
+				longProfit = (signal.Price - buyPrice) * signal.Size
 				profit = append(profit, longProfit)
 				// reset the buy price and long profit
 				buyPrice = 0
 				longProfit = 0
 			}
+			// if the last opened order side is SELL, calculate the short profit
+			if lastSide == "SELL" {
+				shortProfit = (sellPrice - signal.Price) * signal.Size
+				profit = append(profit, shortProfit)
+				// reset the sell price and short profit
+				sellPrice = 0
+				shortProfit = 0
+			}
+			// reset the last opened order side
+			lastSide = ""
+
 		}
+
 	}
 
 	return profit

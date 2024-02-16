@@ -5,6 +5,8 @@ package trader
 type Account struct {
 	Balance      float64
 	PositionSize float64
+	BuyPrice     float64
+	SellPrice    float64
 }
 
 func NewAccount(initialBalance float64) *Account {
@@ -24,23 +26,68 @@ func (a *Account) SimpleTradeSize(amount int) float64 {
 	return size
 }
 
-func (a *Account) Entry(price, size float64) bool {
+// func (a *Account) Entry(price, size float64) bool {
+// 	cost := price * size
+// 	if cost > a.Balance {
+// 		return false
+// 	}
+// 	if side == "BUY"{}
+// 	a.Balance -= cost
+// 	a.PositionSize = size
+// 	a.BuyPrice = price  // Update buy price
+// 	a.SellPrice = price // Update sell price
+// 	return true
+// }
+
+// func (a *Account) Exit2(price float64) bool {
+// 	if a.PositionSize <= 0 {
+// 		return false
+// 	}
+// 	a.Balance += price * a.PositionSize
+// 	a.PositionSize = 0.0
+// 	a.BuyPrice = 0.0  // Reset buy price
+// 	a.SellPrice = 0.0 // Reset sell price
+// 	return true
+// }
+
+func (a *Account) Entry(positionType string, price, size, feeRate float64) bool {
 	cost := price * size
-	if cost > a.Balance {
+	fee := cost * feeRate
+
+	if cost+fee > a.Balance {
 		return false
 	}
-	a.Balance -= cost
+
+	// a.Balance -= cost + fee
 	a.PositionSize = size
+	if positionType == "BUY" {
+		a.BuyPrice = price
+		a.SellPrice = 0.0
+	} else if positionType == "SELL" {
+		a.SellPrice = price
+		a.BuyPrice = 0.0
+	}
 	return true
 }
 
-// このコードに問題あり
-func (a *Account) Exit(price float64) bool {
+// エラーの原因は､空売りの利益計算ロジックの間違いにあった｡
+func (a *Account) Exit(positionType string, price float64) bool {
 	if a.PositionSize <= 0 {
 		return false
 	}
-	a.Balance += a.PositionSize * price
+
+	var pnl float64
+	if positionType == "BUY" {
+		pnl = (price - a.BuyPrice) * a.PositionSize
+	} else if positionType == "SELL" {
+		pnl = (a.SellPrice - price) * a.PositionSize
+	}
+
+	a.Balance += pnl
 	a.PositionSize = 0.0
+	a.BuyPrice = 0.0
+	a.SellPrice = 0.0
+
 	return true
 }
 
@@ -48,6 +95,15 @@ func (a *Account) HolderBuy(price, size float64) bool {
 
 	a.Balance -= price * size
 	a.PositionSize = size
+	return true
+}
+
+func (a *Account) HolderSell(price float64) bool {
+	if a.PositionSize <= 0 {
+		return false
+	}
+	a.Balance += price * a.PositionSize
+	a.PositionSize = 0.0
 	return true
 }
 

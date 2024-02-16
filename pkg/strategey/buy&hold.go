@@ -35,7 +35,7 @@ func BuyAndHoldingStrategy(account *trader.Account) (profit float64, multiple fl
 	buySize := account.TradeSize(1)
 	account.HolderBuy(close[0], buySize)
 
-	account.Exit(close[lenCandles-1])
+	account.HolderSell(close[lenCandles-1])
 
 	profit = account.Balance - initialBalance
 	multiple = account.Balance / initialBalance
