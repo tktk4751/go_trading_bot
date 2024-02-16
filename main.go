@@ -12,14 +12,21 @@ func main() {
 
 	// strategey.RunEmaOptimize()
 	// strategey.RunSTOptimize()
+	strategey.RunEmaRsiOptimize()
 	// strategey.RunDonchainOptimize()
 
+	// strategey.RunEmaOptimize2()
+	// strategey.RunSTOptimize2()
+	// strategey.RunDonchainOptimize2()
+	// strategey.RunDonchainOptimize()
 	// strategey.RunBetterRsiOptimize()
 
-	strategey.DonchainBacktest()
-	strategey.EmaBacktest()
-	strategey.SuperTrendBacktest()
-	strategey.RSIBryyrtBacktest()
+	// fmt.Println("通常のバックテスト結果")
+
+	// strategey.EmaBacktest()
+	// strategey.SuperTrendBacktest()
+	// strategey.DonchainBacktest()
+	// strategey.RSIBetterBacktest()
 
 	// strategey.EmaBacktest()
 	// strategey.RunBacktestST()

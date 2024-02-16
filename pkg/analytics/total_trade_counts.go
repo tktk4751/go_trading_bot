@@ -6,15 +6,52 @@ import (
 	"v1/pkg/execute"
 )
 
+// func TotalTrades(s *execute.SignalEvents) int {
+
+// 	if s == nil {
+// 		return 0.0
+// 	}
+// 	var totalTrades int
+
+// 	for _, signal := range s.Signals {
+// 		if signal.Side == "BUY" || signal.Side == "SELL" {
+// 			totalTrades++
+// 		}
+// 	}
+
+// 	return totalTrades
+// }
+
+// func TotalTrades(s *execute.SignalEvents) int {
+
+// 	if s == nil {
+// 		return 0
+// 	}
+// 	var totalTrades int
+
+// 	for i := 0; i < len(s.Signals)-1; i++ {
+// 		currentSignal := s.Signals[i]
+// 		nextSignal := s.Signals[i+1]
+
+// 		if currentSignal.Side != nextSignal.Side {
+// 			totalTrades++
+// 		}
+// 	}
+
+// 	return totalTrades
+// }
+
 func TotalTrades(s *execute.SignalEvents) int {
 
 	if s == nil {
-		return 0.0
+		return 0
 	}
 	var totalTrades int
 
-	for _, signal := range s.Signals {
-		if signal.Side == "SELL" {
+	for i := 0; i < len(s.Signals)-1; i++ {
+		currentSignal := s.Signals[i]
+
+		if currentSignal.Side == "CLOSE" {
 			totalTrades++
 		}
 	}
@@ -22,7 +59,7 @@ func TotalTrades(s *execute.SignalEvents) int {
 	return totalTrades
 }
 
-func WinningTrades(s *execute.SignalEvents) int {
+func LongWinningTrades(s *execute.SignalEvents) int {
 
 	if s == nil {
 		return 0.0
@@ -33,7 +70,7 @@ func WinningTrades(s *execute.SignalEvents) int {
 	for _, signal := range s.Signals {
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
+		} else if signal.Side == "CLOSE" && buyPrice != 0 {
 			if signal.Price > buyPrice {
 				winningTrades++
 			}
@@ -44,7 +81,7 @@ func WinningTrades(s *execute.SignalEvents) int {
 	return winningTrades
 }
 
-func LosingTrades(s *execute.SignalEvents) int {
+func LongLosingTrades(s *execute.SignalEvents) int {
 
 	if s == nil {
 		return 0.0
@@ -55,13 +92,81 @@ func LosingTrades(s *execute.SignalEvents) int {
 	for _, signal := range s.Signals {
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
+		} else if signal.Side == "CLOSE" && buyPrice != 0 {
 			if signal.Price < buyPrice {
 				losingTrades++
 			}
 			buyPrice = 0 // Reset buy price after a sell
 		}
 	}
+
+	return losingTrades
+}
+
+func ShortWinningTrades(s *execute.SignalEvents) int {
+	if s == nil {
+		return 0
+	}
+	var winningTrades int
+	var sellPrice float64
+
+	for _, signal := range s.Signals {
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "CLOSE" && sellPrice != 0 {
+			if signal.Price < sellPrice {
+				winningTrades++
+			}
+			sellPrice = 0 // Reset sell price after a buy
+		}
+	}
+
+	return winningTrades
+}
+
+func ShortLosingTrades(s *execute.SignalEvents) int {
+	if s == nil {
+		return 0
+	}
+	var losingTrades int
+	var sellPrice float64
+
+	for _, signal := range s.Signals {
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "CLOSE" && sellPrice != 0 {
+			if signal.Price > sellPrice {
+				losingTrades++
+			}
+			sellPrice = 0 // Reset sell price after a buy
+		}
+	}
+
+	return losingTrades
+}
+
+func TotalWinningTrades(s *execute.SignalEvents) int {
+	if s == nil {
+		return 0
+	}
+
+	long := LongWinningTrades(s)
+	short := ShortWinningTrades(s)
+
+	winningTrades := long + short
+
+	return winningTrades
+}
+
+func TotalLosingTrades(s *execute.SignalEvents) int {
+	if s == nil {
+		return 0
+	}
+
+	long := LongLosingTrades(s)
+	short := ShortLosingTrades(s)
+
+	losingTrades := long + short
 
 	return losingTrades
 }
@@ -130,11 +235,12 @@ func AverageWinningHoldingBars(s *execute.SignalEvents) float64 {
 	var totalBars int
 	var winningTrades int
 	var buyPrice float64
+	var sellPrice float64
 
 	for i, signal := range s.Signals {
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
+		} else if signal.Side == "CLOSE" && buyPrice != 0 {
 			if signal.Price > buyPrice {
 				// Find the corresponding buy signal
 				for j := i - 1; j >= 0; j-- {
@@ -150,6 +256,25 @@ func AverageWinningHoldingBars(s *execute.SignalEvents) float64 {
 				}
 			}
 			buyPrice = 0 // Reset buy price after a sell
+		}
+		if signal.Side == "SELL" { // Assign sellPrice when signal is SELL
+			sellPrice = signal.Price
+		} else if signal.Side == "CLOSE" && sellPrice != 0 {
+			if signal.Price < sellPrice { // Count as a winning trade if signal price is lower than sell price
+				// Find the corresponding sell signal
+				for j := i - 1; j >= 0; j-- {
+					if s.Signals[j].Side == "SELL" { // Change the condition to SELL
+						// Calculate the number of bars for this trade
+						// Use the ConvertDuration function to get the bar period in minutes
+						barPeriod := ConvertDuration(signal.Duration)
+						bars := int(signal.Time.Sub(s.Signals[j].Time).Minutes() / barPeriod)
+						totalBars += bars
+						winningTrades++
+						break
+					}
+				}
+			}
+			sellPrice = 0 // Reset sell price after a close
 		}
 	}
 
@@ -168,11 +293,12 @@ func AverageLosingHoldingBars(s *execute.SignalEvents) float64 {
 	var totalBars int
 	var losingTrades int
 	var buyPrice float64
+	var sellPrice float64
 
 	for i, signal := range s.Signals {
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
+		} else if signal.Side == "CLOSE" && buyPrice != 0 {
 			if signal.Price < buyPrice {
 				// Find the corresponding buy signal
 				for j := i - 1; j >= 0; j-- {
@@ -189,6 +315,25 @@ func AverageLosingHoldingBars(s *execute.SignalEvents) float64 {
 			}
 			buyPrice = 0 // Reset buy price after a sell
 		}
+		if signal.Side == "SELL" { // Assign sellPrice when signal is SELL
+			sellPrice = signal.Price
+		} else if signal.Side == "CLOSE" && sellPrice != 0 {
+			if signal.Price > sellPrice { // Count as a losing trade if signal price is higher than sell price
+				// Find the corresponding sell signal
+				for j := i - 1; j >= 0; j-- {
+					if s.Signals[j].Side == "SELL" { // Change the condition to SELL
+						// Calculate the number of bars for this trade
+						// Use the ConvertDuration function to get the bar period in minutes
+						barPeriod := ConvertDuration(signal.Duration)
+						bars := int(signal.Time.Sub(s.Signals[j].Time).Minutes() / barPeriod)
+						totalBars += bars
+						losingTrades++
+						break
+					}
+				}
+			}
+			sellPrice = 0 // Reset sell price after a close
+		}
 	}
 
 	if losingTrades == 0 {
@@ -203,11 +348,12 @@ func MaxWinCount(s *execute.SignalEvents) int {
 	}
 	var maxWinStreak, winStreak int
 	var buyPrice float64
+	var sellPrice float64
 
 	for _, signal := range s.Signals {
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
+		} else if signal.Side == "CLOSE" && buyPrice != 0 {
 			if signal.Price > buyPrice {
 				winStreak++
 				if winStreak > maxWinStreak {
@@ -216,7 +362,20 @@ func MaxWinCount(s *execute.SignalEvents) int {
 			} else {
 				winStreak = 0
 			}
-			buyPrice = 0 // Reset buy price after a sell
+			buyPrice = 0
+		}
+		if signal.Side == "SELl" {
+			sellPrice = signal.Price
+		} else if signal.Side == "CLOSE" && sellPrice != 0 {
+			if signal.Price < sellPrice {
+				winStreak++
+				if winStreak > maxWinStreak {
+					maxWinStreak = winStreak
+				}
+			} else {
+				winStreak = 0
+			}
+			sellPrice = 0 // Reset buy price after a sell
 		}
 	}
 
@@ -229,11 +388,12 @@ func MaxLoseCount(s *execute.SignalEvents) int {
 	}
 	var maxLoseStreak, loseStreak int
 	var buyPrice float64
+	var sellPrice float64
 
 	for _, signal := range s.Signals {
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
+		} else if signal.Side == "CLOSE" && buyPrice != 0 {
 			if signal.Price < buyPrice {
 				loseStreak++
 				if loseStreak > maxLoseStreak {
@@ -242,7 +402,20 @@ func MaxLoseCount(s *execute.SignalEvents) int {
 			} else {
 				loseStreak = 0
 			}
-			buyPrice = 0 // Reset buy price after a sell
+			buyPrice = 0
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "CLOSE" && sellPrice != 0 {
+			if signal.Price > sellPrice {
+				loseStreak++
+				if loseStreak > maxLoseStreak {
+					maxLoseStreak = loseStreak
+				}
+			} else {
+				loseStreak = 0
+			}
+			sellPrice = 0
 		}
 	}
 

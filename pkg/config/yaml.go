@@ -9,11 +9,12 @@ import (
 var data = "config.yml"
 
 type Config struct {
-	AssetName string `yaml:"assetName"`
-	Dration   string `yaml:"duration"`
-	Start     string `yaml:"start"`
-	End       string `yaml:"end"`
-	Simple    bool   `yaml:"simpleInterest"`
+	AssetName  string  `yaml:"assetName"`
+	Dration    string  `yaml:"duration"`
+	Start      string  `yaml:"start"`
+	End        string  `yaml:"end"`
+	Simple     bool    `yaml:"simpleInterest"`
+	Percentage float64 `yaml:"positionPersentage"`
 }
 
 func Yaml() (Config, error) {

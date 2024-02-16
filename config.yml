@@ -2,8 +2,9 @@
 
 
 #バックテストの基本設定
-assetName: "ATOMUSDT"
-duration: "5m"
-start: "20200801"
-end: "20230730"
-simpleInterest: true
+assetName: "ETHUSDT"
+duration: "30m"
+start: ""
+end: ""
+simpleInterest: false
+positionPersentage: 0.9

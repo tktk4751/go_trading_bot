@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"math"
 	"time"
 
 	dbquery "v1/pkg/data/query"
@@ -69,7 +70,7 @@ func Profi2(s *execute.SignalEvents) float64 {
 	return profit
 }
 
-func Profit(s *execute.SignalEvents) float64 {
+func LongProfit(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
@@ -81,12 +82,12 @@ func Profit(s *execute.SignalEvents) float64 {
 	}
 	for _, signal := range s.Signals {
 
-		if signal.Side != "BUY" && signal.Side != "SELL" {
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
 			return 0.0
 		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
+		} else if signal.Side == "CLOSE" && buyPrice != 0 {
 			if signal.Price > buyPrice {
 				profit += (signal.Price - buyPrice) * signal.Size
 			}
@@ -97,7 +98,7 @@ func Profit(s *execute.SignalEvents) float64 {
 	return profit
 }
 
-func Loss(s *execute.SignalEvents) float64 {
+func LongLoss(s *execute.SignalEvents) float64 {
 
 	if s == nil {
 		return 0.0
@@ -110,12 +111,12 @@ func Loss(s *execute.SignalEvents) float64 {
 	}
 	for _, signal := range s.Signals {
 
-		if signal.Side != "BUY" && signal.Side != "SELL" {
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
 			return 0.0
 		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
+		} else if signal.Side == "CLOSE" && buyPrice != 0 {
 			if signal.Price < buyPrice {
 				loss += (buyPrice - signal.Price) * signal.Size
 			}
@@ -126,28 +127,143 @@ func Loss(s *execute.SignalEvents) float64 {
 	return loss
 }
 
-func NetProfit(s *execute.SignalEvents) float64 {
+func ShortProfit(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
-	totalProfit := Profit(s)
-	totalLoss := Loss(s)
+	var profit float64 = 0.0
+	var sellPrice float64
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
+			return 0.0
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "CLOSE" && sellPrice != 0 {
+			if signal.Price < sellPrice {
+				profit += (sellPrice - signal.Price) * signal.Size
+			}
+			sellPrice = 0 // Reset sell price after a buy
+		}
+	}
+
+	return profit
+}
+
+func ShortLoss(s *execute.SignalEvents) float64 {
+
+	if s == nil {
+		return 0.0
+	}
+	var loss float64 = 0.0
+	var sellPrice float64
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return 0.0
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
+			return 0.0
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+		} else if signal.Side == "CLOSE" && sellPrice != 0 {
+			if signal.Price > sellPrice {
+				loss += (signal.Price - sellPrice) * signal.Size
+			}
+			sellPrice = 0 // Reset sell price after a buy
+		}
+	}
+
+	return loss
+}
+
+func TotalProfit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+
+	long := LongProfit(s)
+	short := ShortProfit(s)
+
+	totalProfit := long + short
+
+	return totalProfit
+}
+
+func TotalLoss(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+
+	long := LongLoss(s)
+	short := ShortLoss(s)
+
+	totalLoss := long + short
+
+	return totalLoss
+}
+func LongNetProfit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	totalProfit := LongProfit(s)
+	totalLoss := LongLoss(s)
 
 	return totalProfit - totalLoss
+}
+
+func ShortNetProfit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	totalProfit := ShortProfit(s)
+	totalLoss := ShortLoss(s)
+
+	return totalProfit - totalLoss
+}
+
+func TotalNetProfit(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+	longProfit := LongNetProfit(s)
+	shortProfit := ShortNetProfit(s)
+
+	return longProfit + shortProfit
 }
 
 func ProfitFactor(s *execute.SignalEvents) float64 {
 	if s == nil {
 		return 0.0
 	}
-	totalProfit := Profit(s)
-	totalLoss := Loss(s)
+	totalProfit := TotalProfit(s)
+	totalLoss := TotalLoss(s)
 
-	// if totalLoss == 0 {
-	// 	return math.Inf(1)
-	// }
+	if totalLoss == 0 {
+		return 0.0
+	}
 
 	return totalProfit / totalLoss
+}
+
+func Prr(s *execute.SignalEvents) float64 {
+	if s == nil {
+		return 0.0
+	}
+
+	pf := ProfitFactor(s)
+	n := float64(TotalTrades(s))
+
+	prr := pf / ((n + 1.96*math.Sqrt(n)) / (n - 1.96*math.Sqrt(n)))
+
+	return prr
 }
 
 func FinalBalance(s *execute.SignalEvents) (float64, float64) {
@@ -161,7 +277,7 @@ func FinalBalance(s *execute.SignalEvents) (float64, float64) {
 		return 0, 0
 	}
 
-	finalBlanceValue := accountBalance + NetProfit(s)
+	finalBlanceValue := accountBalance + TotalNetProfit(s)
 	finalBlanceRatio := finalBlanceValue / accountBalance
 
 	return finalBlanceValue, finalBlanceRatio
@@ -252,28 +368,145 @@ func GainPainRatio(s *execute.SignalEvents) float64 {
 
 }
 
-func ReturnProfitLoss(s *execute.SignalEvents) []float64 {
+func PLSlice(s *execute.SignalEvents) []float64 {
 	if s == nil {
 		return nil
 	}
 	var pl []float64 // profit or loss slice
 	var buyPrice float64
+	var sellPrice float64
+	var lastSide string
 
 	if s.Signals == nil || len(s.Signals) == 0 {
 		return nil
 	}
 	for _, signal := range s.Signals {
 
-		if signal.Side != "BUY" && signal.Side != "SELL" {
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
 			return nil
 		}
 		if signal.Side == "BUY" {
 			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
-			pl = append(pl, (signal.Price-buyPrice)*signal.Size) // append the profit or loss of the trade to the slice
-			buyPrice = 0                                         // Reset buy price after a sell
+			lastSide = "BUY"
+
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+			lastSide = "SELL"
+
+		}
+		if signal.Side == "CLOSE" {
+			if lastSide == "BUY" {
+				pl = append(pl, (sellPrice-buyPrice)*signal.Size)
+				buyPrice = 0
+			}
+			if lastSide == "SELL" {
+				pl = append(pl, (sellPrice-buyPrice)*signal.Size)
+				// reset the buy price
+				sellPrice = 0
+			}
+			lastSide = ""
 		}
 	}
-
 	return pl
+}
+
+// func TotalProfitSlice(s *execute.SignalEvents) []float64 {
+// 	if s == nil {
+// 		return nil
+// 	}
+// 	var profit []float64 // total profit slice
+// 	var buyPrice float64
+// 	var sellPrice float64
+// 	var longProfit float64
+// 	var shortProfit float64
+
+// 	if s.Signals == nil || len(s.Signals) == 0 {
+// 		return nil
+// 	}
+// 	for _, signal := range s.Signals {
+
+// 		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
+// 			return nil
+// 		}
+// 		if signal.Side == "BUY" {
+// 			buyPrice = signal.Price
+// 			// if there is a previous sell price, calculate the short profit
+// 			if sellPrice != 0 {
+// 				shortProfit = (sellPrice - buyPrice) * signal.Size
+// 				profit = append(profit, shortProfit)
+// 				// reset the sell price and short profit
+// 				sellPrice = 0
+// 				shortProfit = 0
+// 			}
+// 		}
+// 		if signal.Side == "SELL" {
+// 			sellPrice = signal.Price
+// 			// if there is a previous buy price, calculate the long profit
+// 			if buyPrice != 0 {
+// 				longProfit = (sellPrice - buyPrice) * signal.Size
+// 				profit = append(profit, longProfit)
+// 				// reset the buy price and long profit
+// 				buyPrice = 0
+// 				longProfit = 0
+// 			}
+// 		}
+// 	}
+
+// 	return profit
+// }
+
+func TotalProfitSlice(s *execute.SignalEvents) []float64 {
+	if s == nil {
+		return nil
+	}
+	var profit []float64 // total profit slice
+	var buyPrice float64
+	var sellPrice float64
+	var longProfit float64
+	var shortProfit float64
+	var lastSide string
+
+	if s.Signals == nil || len(s.Signals) == 0 {
+		return nil
+	}
+	for _, signal := range s.Signals {
+
+		if signal.Side != "BUY" && signal.Side != "SELL" && signal.Side != "CLOSE" {
+			return nil
+		}
+		if signal.Side == "BUY" {
+			buyPrice = signal.Price
+			lastSide = "BUY"
+		}
+		if signal.Side == "SELL" {
+			sellPrice = signal.Price
+			lastSide = "SELL"
+		}
+
+		if signal.Side == "CLOSE" {
+			// if the last opened order side is BUY, calculate the long profit
+			if lastSide == "BUY" {
+				longProfit = (signal.Price - buyPrice) * signal.Size
+				profit = append(profit, longProfit)
+				// reset the buy price and long profit
+				buyPrice = 0
+				longProfit = 0
+			}
+			// if the last opened order side is SELL, calculate the short profit
+			if lastSide == "SELL" {
+				shortProfit = (sellPrice - signal.Price) * signal.Size
+				profit = append(profit, shortProfit)
+				// reset the sell price and short profit
+				sellPrice = 0
+				shortProfit = 0
+			}
+			// reset the last opened order side
+			lastSide = ""
+
+		}
+
+	}
+
+	return profit
 }

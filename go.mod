@@ -17,6 +17,7 @@ require (
 
 require (
 	github.com/acroca/go-symbols v0.1.1 // indirect
+	github.com/c-bata/goptuna v0.9.0 // indirect
 	github.com/go-echarts/go-echarts/v2 v2.3.3 // indirect
 	github.com/go-gota/gota v0.12.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
@@ -37,6 +38,7 @@ require (
 	github.com/ramya-rao-a/go-outline v0.0.0-20210608161538-9736a4bde949 // indirect
 	github.com/rivo/uniseg v0.4.6 // indirect
 	github.com/rocketlaunchr/dataframe-go v0.0.0-20211025052708-a1030444159b // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
@@ -46,7 +48,7 @@ require (
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
-	gonum.org/v1/gonum v0.9.1 // indirect
+	gonum.org/v1/gonum v0.14.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

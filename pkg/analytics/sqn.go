@@ -10,21 +10,21 @@ func calculateStandardDeviation(s *execute.SignalEvents) float64 {
 		return 0.0
 	}
 
-	var profits []float64
-	var buyPrice float64
+	var profits []float64 = TotalProfitSlice(s)
+	// var buyPrice float64
 
-	for _, signal := range s.Signals {
-		if signal.Side != "BUY" && signal.Side != "SELL" {
-			continue
-		}
-		if signal.Side == "BUY" {
-			buyPrice = signal.Price
-		} else if signal.Side == "SELL" && buyPrice != 0 {
-			profit := (signal.Price - buyPrice) * signal.Size
-			profits = append(profits, profit)
-			buyPrice = 0 // Reset buy price after a sell
-		}
-	}
+	// for _, signal := range s.Signals {
+	// 	if signal.Side != "BUY" && signal.Side != "SELL" {
+	// 		continue
+	// 	}
+	// 	if signal.Side == "BUY" {
+	// 		buyPrice = signal.Price
+	// 	} else if signal.Side == "SELL" && buyPrice != 0 {
+	// 		profit := (signal.Price - buyPrice) * signal.Size
+	// 		profits = append(profits, profit)
+	// 		buyPrice = 0 // Reset buy price after a sell
+	// 	}
+	// }
 
 	// Calculate mean of profits
 	mean := 0.0
